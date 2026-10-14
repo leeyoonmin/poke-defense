@@ -20,7 +20,7 @@
     return IMG_CACHE[src];
   }
 
-  function drawAnimatedSprite(id, cx, cy, size, phase = 0, flipX = false, tilt = 0, squash = 0, flash = false) {
+  function drawAnimatedSprite(id, cx, cy, size, phase = 0, flipX = false, tilt = 0, squash = 0, flash = false, isShiny = false) {
     const key = String(id);
     const meta = ANIM_META[key];
     const animSheet = meta ? getImg(`./assets/anim/${key}.png`) : null;
@@ -31,7 +31,11 @@
     if (flipX) ctx.scale(-1, 1);
     if (tilt) ctx.rotate(tilt);
     if (squash) ctx.scale(1 + squash, 1 - squash);
-    if (flash) ctx.filter = 'brightness(2.8) contrast(1.8)';
+    if (flash) {
+      ctx.filter = 'brightness(2.8) contrast(1.8)';
+    } else if (isShiny) {
+      ctx.filter = 'hue-rotate(55deg) saturate(1.75) brightness(1.15)';
+    }
 
     if (animSheet && animSheet.complete && animSheet.naturalWidth > 0 && meta && meta.frames > 0) {
       const frameIdx = Math.floor(phase) % meta.frames;
@@ -60,24 +64,56 @@
     getImg(`./assets/anim/${b.id}.png`);
   });
 
+  // Persistent Save Data (Trainer Medals, Cleared Stages, Permanent Relics)
+  function loadSave() {
+    try {
+      const raw = localStorage.getItem('poke_def_save_v1');
+      if (raw) {
+        const p = JSON.parse(raw);
+        return {
+          medals: p.medals ?? 150,
+          selectedStage: p.selectedStage || 1,
+          clearedStages: Array.isArray(p.clearedStages) ? p.clearedStages : [],
+          relics: p.relics || {}
+        };
+      }
+    } catch (e) {}
+    return { medals: 150, selectedStage: 1, clearedStages: [], relics: {} };
+  }
+
+  const saveData = loadSave();
+  function saveProgress() {
+    try {
+      localStorage.setItem('poke_def_save_v1', JSON.stringify(saveData));
+    } catch (e) {}
+  }
+  function getRelicLvl(id) {
+    return saveData.relics[id] || 0;
+  }
+
   // Game State
   const state = {
     running: false,
     mode: 'solo', // 'solo' | 'coop_ai' | 'coop_p2p'
+    currentStage: window.POKE_DATA.stages[0],
     speed: 1,
     wave: 1,
-    maxWaves: 80,
+    maxWaves: 30,
     waveTimer: 22,
     spawnQueue: 0,
     spawnCooldown: 0,
-    enemyLimit: 80,
+    enemyLimit: 100,
 
     gold: 160,
     gems: 4,
     summonCost: 20,
     summonCount: 0,
+    summonDiscount: 0,
 
     bountyCooldown: 0,
+    completedMissions: new Set(),
+    badges: new Set(),
+    bountyBossKilled: false,
 
     upgrades: {
       basic: 1,  // Stage 1~2 DMG
@@ -232,7 +268,7 @@
     }
   }
 
-  // Compute Unit Effective Damage & Attack Speed (including Gengar aura & upgrades)
+  // Compute Unit Effective Damage & Attack Speed (including Shiny, Relics, Gym Badges, Gengar aura & upgrades)
   function getUnitStats(slotUnit, slotIdx, isAlly = false) {
     const meta = window.UNIT_BY_ID[slotUnit.id];
     if (!meta) return { dmg: 10, rate: 1, range: 120 };
@@ -244,11 +280,24 @@
       dmgMul = 1 + (state.upgrades.stage3 - 1) * 0.35;
     }
 
+    if (!isAlly) {
+      // Champion Crest Relic (+8%/Lv)
+      dmgMul *= (1 + getRelicLvl('champ_crest') * 0.08);
+      // Gym Badges
+      if (state.badges.has('volcano')) dmgMul *= 1.25;
+      if (state.badges.has('boulder') && (meta.type === 'rock' || meta.type === 'steel' || meta.type === 'ground')) dmgMul *= 1.40;
+      if (state.badges.has('thunder') && meta.type === 'electric') dmgMul *= 1.35;
+    }
+
+    // Shiny Pokemon Bonus (1.5x DMG & 1.25x Attack Speed!)
+    const shinyDmg = slotUnit.isShiny ? 1.5 : 1.0;
+    const shinySpd = slotUnit.isShiny ? 0.25 : 0;
+
     // Check Gengar line (92, 93, 94) or Mewtwo (150) attack speed aura on same board
     const board = isAlly ? state.allySlots : state.mySlots;
     const rects = isAlly ? geom.allyGridRects : geom.myGridRects;
     const myRect = rects[slotIdx];
-    let speedBonus = 0;
+    let speedBonus = shinySpd + (!isAlly && state.badges.has('cascade') ? 0.18 : 0);
 
     if (myRect) {
       board.forEach((other, idx) => {
@@ -257,10 +306,10 @@
         if (!oRect) return;
         const dist = Math.hypot(myRect.cx - oRect.cx, myRect.cy - oRect.cy);
         if (dist <= 135) {
-          if (other.id === 92) speedBonus = Math.max(speedBonus, 0.12);
-          else if (other.id === 93) speedBonus = Math.max(speedBonus, 0.24);
-          else if (other.id === 94) speedBonus = Math.max(speedBonus, 0.42);
-          else if (other.id === 150) speedBonus = Math.max(speedBonus, 0.50);
+          if (other.id === 92) speedBonus = Math.max(speedBonus, 0.12 + shinySpd);
+          else if (other.id === 93) speedBonus = Math.max(speedBonus, 0.24 + shinySpd);
+          else if (other.id === 94) speedBonus = Math.max(speedBonus, 0.42 + shinySpd);
+          else if (other.id === 150) speedBonus = Math.max(speedBonus, 0.50 + shinySpd);
         }
       });
     }
@@ -268,27 +317,40 @@
     const stackCount = slotUnit.count || 1;
     const allyPenalty = (isAlly && state.mode !== 'coop_p2p') ? 0.55 : 1.0;
     return {
-      dmg: Math.max(1, Math.round(meta.dmg * dmgMul * stackCount * allyPenalty)),
+      dmg: Math.max(1, Math.round(meta.dmg * dmgMul * shinyDmg * stackCount * allyPenalty)),
       rate: +(meta.rate * (1 + speedBonus)).toFixed(2),
       range: meta.range + 22
     };
   }
 
+  function rollShiny(bonusChance = 0) {
+    const chance = 0.05 + getRelicLvl('shiny_charm') * 0.015 + bonusChance;
+    return Math.random() < chance;
+  }
+
   // Initialize / Reset Game
   function startGame(mode = 'solo') {
+    const stg = (window.POKE_DATA.stages || []).find(s => s.id === saveData.selectedStage) || window.POKE_DATA.stages[0];
+    state.currentStage = stg;
     state.mode = mode;
     state.running = true;
     state.wave = 1;
+    state.maxWaves = stg.maxWaves || 30;
     state.waveTimer = 20;
     state.spawnQueue = 18;
     state.spawnCooldown = 0.4;
-    state.enemyLimit = mode === 'solo' ? 80 : 100;
+    state.enemyLimit = stg.enemyLimit || 100;
 
-    state.gold = 160;
-    state.gems = 4;
+    const fundLvl = getRelicLvl('starter_fund');
+    state.gold = 160 + fundLvl * 25;
+    state.gems = 4 + (fundLvl >= 3 ? 1 : 0);
+    state.summonDiscount = 0;
     state.summonCost = 20;
     state.summonCount = 0;
     state.bountyCooldown = 0;
+    state.completedMissions = new Set();
+    state.badges = new Set();
+    state.bountyBossKilled = false;
 
     state.upgrades = { basic: 1, stage3: 1, luck: 1 };
     state.mySlots = new Array(18).fill(null);
@@ -307,12 +369,13 @@
     document.getElementById('lobbyOverlay').classList.remove('active');
     document.getElementById('coopModal').classList.remove('active');
     document.getElementById('resultModal').classList.remove('active');
+    document.getElementById('badgeModal').classList.remove('active');
     document.getElementById('modeBadge').textContent =
-      mode === 'solo' ? '1P SOLO' : (mode === 'coop_p2p' ? '2P P2P' : '2P CO-OP');
+      `${stg.icon} STAGE ${stg.id}`;
 
     resizeCanvas();
     window.sfx.startBGM();
-    addBanner(`WAVE 1 시작!`, '포켓몬을 소환하고 3마리를 합쳐 진화시키세요!', '#facc15');
+    addBanner(`${stg.icon} ${stg.name} 시작!`, `${stg.sub}`, '#facc15');
     updateHud();
   }
 
@@ -366,17 +429,20 @@
 
     state.gold -= state.summonCost;
     state.summonCount++;
-    state.summonCost = 20 + Math.floor(state.summonCount * 2.5);
+    state.summonCost = Math.max(10, 20 + Math.floor(state.summonCount * 2.5) - (state.summonDiscount || 0));
 
+    const shiny = rollShiny();
     let targetSlot = stackSlot;
     if (targetSlot !== -1) {
       state.mySlots[targetSlot].count = (state.mySlots[targetSlot].count || 1) + 1;
       state.mySlots[targetSlot].spawnAnim = 1.0;
+      if (shiny) state.mySlots[targetSlot].isShiny = true;
     } else {
       targetSlot = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
       state.mySlots[targetSlot] = {
         id: picked.id,
         count: 1,
+        isShiny: shiny,
         cooldown: 0.1,
         spawnAnim: 1.0
       };
@@ -384,9 +450,13 @@
 
     const rect = geom.myGridRects[targetSlot];
     if (rect) {
-      spawnEffect('summon', rect.cx, rect.cy, picked.color);
+      spawnEffect(shiny ? 'evolve_ring' : 'summon', rect.cx, rect.cy, shiny ? '#fde047' : picked.color);
       const curCount = state.mySlots[targetSlot].count || 1;
-      if (stage >= 2) {
+      if (shiny) {
+        addFloatText(rect.cx, rect.cy - 22, `✨ 이로치 등장! ${picked.name} (1.5배!)`, '#fde047', 15);
+        addBanner(`✨ 대박! 이로치 [${picked.name}] 소환!`, '이로치 포켓몬은 공격력 1.5배 · 공속 1.25배!', '#fde047');
+        window.sfx.playMythic();
+      } else if (stage >= 2) {
         addFloatText(rect.cx, rect.cy - 18, `✨ ${stage}단 대박! ${picked.name}`, '#fde047', 14);
         window.sfx.playEvolve();
       } else {
@@ -420,6 +490,7 @@
     const totalCount = countUnitOnBoard(board, target.id);
     if (totalCount < 3) return false;
 
+    const hadShiny = !!target.isShiny;
     // Deduct 3 units starting from target slot, then other slots if needed
     let needed = 3;
     const targetCount = target.count || 1;
@@ -450,19 +521,27 @@
     const nextStage = meta.stage + 1;
     const nextPool = window.STAGE_POOLS[nextStage];
     const evolved = nextPool[Math.floor(Math.random() * nextPool.length)];
+    const shinyEvo = !isAlly && rollShiny(hadShiny ? 0.45 : 0.02);
 
     // Try stacking if stage 2 already exists with count < 3, otherwise place in slotIndex
     board[slotIndex] = {
       id: evolved.id,
       count: 1,
+      isShiny: shinyEvo,
       cooldown: 0.1,
       spawnAnim: 1.0
     };
 
     const destRect = rects[slotIndex];
     if (destRect) {
-      spawnEffect('evolve_ring', destRect.cx, destRect.cy, evolved.color);
-      addFloatText(destRect.cx, destRect.cy - 20, `🧬 ${nextStage}단 진화! ${evolved.name}`, '#fde047', 14);
+      spawnEffect('evolve_ring', destRect.cx, destRect.cy, shinyEvo ? '#fde047' : evolved.color);
+      addFloatText(
+        destRect.cx,
+        destRect.cy - 20,
+        shinyEvo ? `✨ 이로치 진화! ${evolved.name}` : `🧬 ${nextStage}단 진화! ${evolved.name}`,
+        '#fde047',
+        14
+      );
     }
 
     if (!isAlly) {
@@ -578,18 +657,20 @@
     }
 
     state.gems -= gemCost;
-    const ok = Math.random() < successChance;
+    const bonusLuck = getRelicLvl('lucky_charm') * 0.03 + (state.badges.has('jeweler') ? 0.12 : 0);
+    const ok = Math.random() < Math.min(0.95, successChance + bonusLuck);
     const slot = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
     const rect = geom.myGridRects[slot];
 
     if (ok) {
       const pool = window.STAGE_POOLS[targetStage];
       const picked = pool[Math.floor(Math.random() * pool.length)];
-      state.mySlots[slot] = { id: picked.id, cooldown: 0.1, spawnAnim: 1.1 };
+      const shiny = rollShiny(0.05);
+      state.mySlots[slot] = { id: picked.id, count: 1, isShiny: shiny, cooldown: 0.1, spawnAnim: 1.1 };
       window.sfx.playEvolve();
       if (rect) {
-        spawnEffect('evolve_ring', rect.cx, rect.cy, picked.color);
-        addFloatText(rect.cx, rect.cy - 20, `🎰 도박 성공! [${targetStage}단] ${picked.name}`, '#fde047', 15);
+        spawnEffect('evolve_ring', rect.cx, rect.cy, shiny ? '#fde047' : picked.color);
+        addFloatText(rect.cx, rect.cy - 20, `🎰 도박 성공! ${shiny ? '✨이로치 ' : ''}[${targetStage}단] ${picked.name}`, '#fde047', 15);
       }
     } else {
       window.sfx.playFail();
@@ -636,35 +717,47 @@
     updateHud();
   }
 
-  // Spawn Wave Enemy or Wave Boss
+  // Spawn Wave Enemy or Wave Boss (with Stage Region Modifiers & Double Boss!)
   function spawnWaveEnemy(isWaveBoss = false) {
     const w = state.wave;
-    const baseHp = Math.round(280 + Math.pow(w, 1.95) * 115);
+    const stg = state.currentStage || window.POKE_DATA.stages[0];
+    const baseHp = Math.round((280 + Math.pow(w, 1.95) * 115) * (stg.hpMult || 1));
+    const spdMul = stg.spdMult || 1;
+    const baseArmor = stg.baseArmor || 0;
 
     if (isWaveBoss) {
-      const bossMeta = window.POKE_DATA.bossPool[Math.floor((w / 10 - 1)) % window.POKE_DATA.bossPool.length] || window.POKE_DATA.bossPool[0];
-      const hp = Math.round(baseHp * bossMeta.hpMul * 1.45);
-      state.enemies.push({
-        id: bossMeta.id,
-        name: `[WAVE ${w} 보스] ${bossMeta.name}`,
-        hp,
-        maxHp: hp,
-        spd: 0.38 * bossMeta.spd,
-        progress: 0,
-        isBoss: true,
-        isBounty: false,
-        armorBreak: 0,
-        slowTimer: 0,
-        slowFactor: 1,
-        stunTimer: 0,
-        poisonTimer: 0,
-        poisonDmg: 0,
-        burnTimer: 0,
-        burnDmg: 0,
-        scale: 1.5
-      });
+      const bossCount = stg.doubleBoss ? 2 : 1;
+      for (let b = 0; b < bossCount; b++) {
+        const bossMeta = window.POKE_DATA.bossPool[(Math.floor(w / 10 - 1) + b) % window.POKE_DATA.bossPool.length] || window.POKE_DATA.bossPool[0];
+        const hp = Math.round(baseHp * bossMeta.hpMul * 1.45 * (bossCount > 1 ? 0.78 : 1));
+        state.enemies.push({
+          id: bossMeta.id,
+          name: `[WAVE ${w} 보스] ${bossMeta.name}`,
+          hp,
+          maxHp: hp,
+          spd: 0.38 * bossMeta.spd * spdMul,
+          progress: b === 1 ? 4.0 : 0.0,
+          isBoss: true,
+          isBounty: false,
+          baseArmor,
+          armorBreak: 0,
+          slowTimer: 0,
+          slowFactor: 1,
+          stunTimer: 0,
+          poisonTimer: 0,
+          poisonDmg: 0,
+          burnTimer: 0,
+          burnDmg: 0,
+          scale: 1.5
+        });
+      }
       window.sfx.playBossAlert();
-      addBanner(`🚨 WAVE ${w} 보스 [${bossMeta.name}] 등장!`, bossMeta.title, '#ef4444');
+      const firstBoss = window.POKE_DATA.bossPool[Math.floor((w / 10 - 1)) % window.POKE_DATA.bossPool.length] || window.POKE_DATA.bossPool[0];
+      addBanner(
+        stg.doubleBoss ? `🚨 WAVE ${w} 더블 보스 출현!` : `🚨 WAVE ${w} 보스 [${firstBoss.name}] 등장!`,
+        firstBoss.title,
+        '#ef4444'
+      );
     } else {
       const eMeta = window.POKE_DATA.enemyPool[(w + state.spawnQueue) % window.POKE_DATA.enemyPool.length];
       const hp = Math.round(baseHp * eMeta.hpMul * 1.35);
@@ -675,10 +768,11 @@
         name: eMeta.name,
         hp,
         maxHp: hp,
-        spd: 0.54 * eMeta.spd,
+        spd: 0.54 * eMeta.spd * spdMul,
         progress: startProg,
         isBoss: false,
         isBounty: false,
+        baseArmor,
         armorBreak: 0,
         slowTimer: 0,
         slowFactor: 1,
@@ -1016,8 +1110,11 @@
 
   function dealDamageToEnemy(en, rawDmg) {
     if (!en || en.hp <= 0) return;
-    const mult = 1 + (en.armorBreak || 0);
-    const finalDmg = Math.max(1, Math.round(rawDmg * mult));
+    const rainbowBonus = state.badges.has('rainbow') && en.armorBreak > 0 ? 0.20 : 0;
+    const bossBadgeBonus = state.badges.has('marsh') && en.isBoss ? 1.35 : 1.0;
+    const netArmor = Math.max(-0.5, (en.armorBreak || 0) + rainbowBonus - (en.baseArmor || 0));
+    const mult = Math.max(0.25, 1 + netArmor);
+    const finalDmg = Math.max(1, Math.round(rawDmg * mult * bossBadgeBonus));
     en.hp -= finalDmg;
     en.hitFlash = 0.11;
   }
@@ -1102,14 +1199,26 @@
       state.wave++;
       state.waveTimer = 22;
       state.spawnQueue = 28 + Math.min(28, Math.floor(state.wave * 0.75));
-      state.gold += 30 + state.wave * 2;
+
+      // Safe Box Relic Compound Interest!
+      const safeLvl = getRelicLvl('safe_box');
+      const interest = safeLvl > 0 ? Math.floor(state.gold * (safeLvl * 0.02)) : 0;
+      const baseWaveGold = 30 + state.wave * 2;
+      state.gold += baseWaveGold + interest;
       state.allyGold += 28 + state.wave * 2;
+      if (interest > 0) {
+        addFloatText(geom.w / 2, geom.h * 0.72, `💰금고 복리이자 +${interest}G!`, '#fde047', 14);
+      }
 
       if (state.wave % 10 === 0) {
         spawnWaveEnemy(true);
         state.gems += 2;
       } else {
-        addBanner(`WAVE ${state.wave}`, `몬스터 웨이브가 몰려옵니다! (+${30 + state.wave * 2}G)`, '#38bdf8');
+        addBanner(
+          `WAVE ${state.wave}`,
+          interest > 0 ? `웨이브 보상 +${baseWaveGold}G (금고이자 +${interest}G!)` : `몬스터 웨이브가 몰려옵니다! (+${baseWaveGold}G)`,
+          '#38bdf8'
+        );
       }
       updateHud();
     }
@@ -1188,12 +1297,16 @@
         state.stats.kills++;
         if (en.isBoss) {
           state.stats.bossKills++;
+          if (en.isBounty) state.bountyBossKilled = true;
           const gemReward = en.isBounty ? 2 : 3;
           const goldReward = en.isBounty ? 100 : 150;
           state.gems += gemReward;
           state.gold += goldReward;
           window.sfx.playEvolve();
           addFloatText(pos.x, pos.y - 16, `👑 보스 처치! +${goldReward}G +${gemReward}💎`, '#fde047', 15);
+          if (!en.isBounty) {
+            triggerGymBadgeModal();
+          }
         } else {
           const g = 4 + Math.floor(state.wave * 0.25);
           state.gold += g;
@@ -1249,19 +1362,41 @@
 
   function finishGame(victory) {
     state.running = false;
+    const stg = state.currentStage || window.POKE_DATA.stages[0];
+    const earnedMedals = victory
+      ? (stg.medalReward || 100) + Math.floor(state.wave * 2)
+      : Math.max(10, Math.floor(state.wave * 1.5));
+    saveData.medals = (saveData.medals || 0) + earnedMedals;
+    if (victory && !saveData.clearedStages.includes(stg.id)) {
+      saveData.clearedStages.push(stg.id);
+    }
+    saveProgress();
+    renderLobbyStages();
+
     const modal = document.getElementById('resultModal');
-    document.getElementById('resultTitle').textContent = victory ? '🏆 디펜스 최종 승리!' : '💀 방어선 포화 패배...';
+    document.getElementById('resultTitle').textContent = victory
+      ? `🏆 ${stg.icon} ${stg.name} 정복 완료!`
+      : '💀 방어선 포화 패배...';
     document.getElementById('resultSummary').textContent = victory
-      ? '80웨이브의 모든 보스와 몬스터 군단을 물리쳤습니다!'
-      : `트랙 위 몬스터 수가 한도(${state.enemyLimit}마리)를 초과하여 방어선이 무너졌습니다.`;
+      ? `${stg.maxWaves}웨이브의 모든 보스를 물리치고 🏅+${earnedMedals} 메달을 획득했습니다!`
+      : `트랙 위 몬스터 수가 한도(${state.enemyLimit}마리)를 초과했습니다. (위로금 🏅+${earnedMedals} 메달 획득)`;
     document.getElementById('resultStats').innerHTML = `
-      <div>도달 웨이브: <b>WAVE ${state.wave}</b></div>
+      <div>도전 지역: <b>${stg.name}</b></div>
+      <div>도달 웨이브: <b>WAVE ${state.wave} / ${stg.maxWaves}</b></div>
       <div>처치한 적: <b>${state.stats.kills}마리</b></div>
       <div>보스 처치: <b>${state.stats.bossKills}회</b></div>
-      <div>3합성 진화: <b>${state.stats.merges}회</b></div>
       <div>신화 강림: <b>${state.stats.mythicsSummoned}회</b></div>
-      <div>모드: <b>${state.mode.toUpperCase()}</b></div>
+      <div>획득 메달: <b style="color:#c2410c">+🏅 ${earnedMedals}</b></div>
     `;
+    const btnNext = document.getElementById('btnDefNextStage');
+    if (btnNext) {
+      if (victory && stg.id < window.POKE_DATA.stages.length) {
+        btnNext.classList.remove('hidden');
+        btnNext.textContent = `⚔️ STAGE ${stg.id + 1} 즉시 출격하기!`;
+      } else {
+        btnNext.classList.add('hidden');
+      }
+    }
     modal.classList.add('active');
   }
 
@@ -1777,9 +1912,17 @@
           !!unit.faceRight,
           atkTilt,
           idleSquash,
-          atkRatio > 0.55
+          atkRatio > 0.55,
+          !!unit.isShiny
         );
       });
+
+      // Shiny Sparkle Badge
+      if (unit.isShiny) {
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('✨', r.cx + r.w * 0.28, r.cy - baseSize * 0.48);
+      }
 
       // Small clean cooldown / mana bar right under the foot aura
       const barW = 22;
@@ -1860,9 +2003,218 @@
     document.getElementById('lvlLuck').textContent = `Lv.${state.upgrades.luck}`;
     document.getElementById('costLuck').textContent = `🪙 ${costLuck}`;
 
-    // Update Mythic Recipe Bar
+    // Update Mythic Recipe Bar, Missions & Inspector
+    checkMissions();
     renderMythicRecipeBar();
     updateInspector();
+  }
+
+  // Check & Auto-Reward 8 In-Game Bounty Missions!
+  function checkMissions() {
+    if (!state.running || !window.POKE_DATA.missions) return;
+    const myUnits = state.mySlots.filter(Boolean);
+    const stage1Types = new Set();
+    let squad3Slots = 0;
+    let hasStage3 = false;
+    let hasShiny = false;
+    let totalPop = 0;
+
+    myUnits.forEach(u => {
+      const m = window.UNIT_BY_ID[u.id];
+      const cnt = u.count || 1;
+      totalPop += cnt;
+      if (u.isShiny) hasShiny = true;
+      if (m) {
+        if (m.stage === 1) stage1Types.add(u.id);
+        if (m.stage < 3 && cnt >= 3) squad3Slots++;
+        if (m.stage === 3) hasStage3 = true;
+      }
+    });
+
+    const condMap = {
+      m_collector: stage1Types.size >= 6,
+      m_squad2: squad3Slots >= 2,
+      m_first3: hasStage3,
+      m_shiny: hasShiny,
+      m_bounty: !!state.bountyBossKilled,
+      m_mythic: state.stats.mythicsSummoned >= 1,
+      m_rich: state.gold >= 350,
+      m_army: totalPop >= 15
+    };
+
+    window.POKE_DATA.missions.forEach(ms => {
+      if (!state.completedMissions.has(ms.id) && condMap[ms.id]) {
+        state.completedMissions.add(ms.id);
+        state.gold += ms.gold || 0;
+        state.gems += ms.gems || 0;
+        window.sfx.playEvolve();
+        const rewardStr = [ms.gold ? `+${ms.gold}G` : '', ms.gems ? `+${ms.gems}💎` : ''].filter(Boolean).join(' ');
+        addBanner(`🎯 미션 달성! [${ms.title}]`, `${ms.desc} (${rewardStr} 지급!)`, '#facc15');
+      }
+    });
+
+    const btnTxt = document.getElementById('missionCountBtnTxt');
+    if (btnTxt) {
+      btnTxt.textContent = `미션 ${state.completedMissions.size}/${window.POKE_DATA.missions.length}`;
+    }
+  }
+
+  function openMissionModal() {
+    const box = document.getElementById('missionListContainer');
+    if (box && window.POKE_DATA.missions) {
+      box.innerHTML = window.POKE_DATA.missions.map(ms => {
+        const done = state.completedMissions.has(ms.id);
+        const rewardStr = [ms.gold ? `🪙+${ms.gold}G` : '', ms.gems ? `💎+${ms.gems}` : ''].filter(Boolean).join(' · ');
+        return `
+          <div class="recipe-card" style="${done ? 'background:#dcfce7;border-color:#16a34a' : ''}">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div class="recipe-title" style="color:${done ? '#15803d' : '#111827'}">${done ? '✅ [달성완료]' : '🎯 [진행중]'} ${ms.title}</div>
+              <span class="medal-pill">${rewardStr}</span>
+            </div>
+            <div class="recipe-desc">${ms.desc}</div>
+          </div>
+        `;
+      }).join('');
+    }
+    document.getElementById('missionModal').classList.add('active');
+  }
+
+  function openRelicModal() {
+    const medalEl = document.getElementById('relicModalMedals');
+    if (medalEl) medalEl.textContent = (saveData.medals || 0).toLocaleString();
+    const box = document.getElementById('relicListContainer');
+    if (box && window.POKE_DATA.relics) {
+      box.innerHTML = '';
+      window.POKE_DATA.relics.forEach(rel => {
+        const lvl = getRelicLvl(rel.id);
+        const isMax = lvl >= rel.max;
+        const cost = Math.floor(rel.baseCost * Math.pow(1.45, lvl));
+        const canBuy = !isMax && (saveData.medals || 0) >= cost;
+
+        const card = document.createElement('div');
+        card.className = 'recipe-card';
+        card.innerHTML = `
+          <div class="recipe-head">
+            <img src="${rel.img}" alt="${rel.name}" />
+            <div style="flex:1">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span class="recipe-title">${rel.name}</span>
+                <span class="medal-pill">Lv.${lvl} / ${rel.max}</span>
+              </div>
+              <div class="recipe-desc">${rel.desc}</div>
+            </div>
+          </div>
+          <button class="game-3d-btn ${canBuy ? 'blue' : 'slate'} sm" style="width:100%" ${canBuy ? '' : 'disabled'}>
+            ${isMax ? '최대 레벨 달성' : `🏅 ${cost} 메달로 강화하기`}
+          </button>
+        `;
+        const btn = card.querySelector('button');
+        if (canBuy) {
+          btn.onclick = () => {
+            saveData.medals -= cost;
+            saveData.relics[rel.id] = lvl + 1;
+            saveProgress();
+            window.sfx.playEvolve();
+            openRelicModal();
+            renderLobbyStages();
+          };
+        }
+        box.appendChild(card);
+      });
+    }
+    document.getElementById('relicModal').classList.add('active');
+  }
+
+  function triggerGymBadgeModal() {
+    const pool = (window.POKE_DATA.gymBadges || []).filter(b => !state.badges.has(b.id) || b.id === 'rocket' || b.id === 'jeweler' || b.id === 'evo_stone');
+    if (pool.length === 0) return;
+    const shuffled = [...pool].sort(() => Math.random() - 0.5).slice(0, 3);
+    const box = document.getElementById('badgeChoicesContainer');
+    if (!box) return;
+    box.innerHTML = '';
+
+    shuffled.forEach(bg => {
+      const card = document.createElement('div');
+      card.className = 'recipe-card';
+      card.style.cursor = 'pointer';
+      card.innerHTML = `
+        <div class="recipe-head">
+          <div style="width:44px;height:44px;background:#fef08a;border:2px solid #111827;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:24px">${bg.icon}</div>
+          <div style="flex:1">
+            <div class="recipe-title">▶ ${bg.name}</div>
+            <div class="recipe-desc">${bg.desc}</div>
+          </div>
+        </div>
+      `;
+      card.onclick = () => {
+        state.badges.add(bg.id);
+        window.sfx.playMythic();
+        if (bg.id === 'rocket') {
+          state.gold += 140;
+          state.summonDiscount = (state.summonDiscount || 0) + 4;
+          state.summonCost = Math.max(10, state.summonCost - 4);
+        } else if (bg.id === 'jeweler') {
+          state.gems += 4;
+        } else if (bg.id === 'evo_stone') {
+          const empty = [];
+          state.mySlots.forEach((s, i) => { if (!s) empty.push(i); });
+          const slot = empty.length > 0 ? empty[Math.floor(Math.random() * empty.length)] : 0;
+          const p3 = window.STAGE_POOLS[3];
+          const picked = p3[Math.floor(Math.random() * p3.length)];
+          state.mySlots[slot] = { id: picked.id, count: 1, isShiny: Math.random() < 0.4, cooldown: 0.1, spawnAnim: 1.2 };
+        }
+        renderOwnedBadges();
+        document.getElementById('badgeModal').classList.remove('active');
+        addBanner(`🎖️ [${bg.name}] 획득!`, bg.desc, '#fde047');
+        updateHud();
+      };
+      box.appendChild(card);
+    });
+
+    document.getElementById('badgeModal').classList.add('active');
+  }
+
+  function renderOwnedBadges() {
+    const row = document.getElementById('ownedBadgesRow');
+    if (!row) return;
+    row.innerHTML = '';
+    (window.POKE_DATA.gymBadges || []).forEach(b => {
+      if (state.badges.has(b.id)) {
+        const el = document.createElement('div');
+        el.className = 'owned-badge-icon';
+        el.title = `${b.name}: ${b.desc}`;
+        el.textContent = b.icon;
+        row.appendChild(el);
+      }
+    });
+  }
+
+  function renderLobbyStages() {
+    const medalEl = document.getElementById('lobbyMedals');
+    if (medalEl) medalEl.textContent = (saveData.medals || 0).toLocaleString();
+    const grid = document.getElementById('defStageGrid');
+    if (!grid || !window.POKE_DATA.stages) return;
+    grid.innerHTML = '';
+
+    window.POKE_DATA.stages.forEach(stg => {
+      const isCleared = (saveData.clearedStages || []).includes(stg.id);
+      const card = document.createElement('div');
+      card.className = `def-stage-card ${stg.id === saveData.selectedStage ? 'selected' : ''}`;
+      card.innerHTML = `
+        <span style="font-size:10px;font-weight:900;color:${isCleared ? '#15803d' : '#c2410c'}">${isCleared ? '🏆 CLEAR' : `${stg.maxWaves} WAVE`}</span>
+        <img src="./assets/sprites/${stg.bossImg}.png" alt="${stg.name}" />
+        <div class="def-stage-name">${stg.icon} STAGE ${stg.id}</div>
+        <div class="def-stage-sub">${stg.name.replace(/^STAGE \d+\.\s*/, '')}</div>
+        <div style="font-size:9.5px;font-weight:900;color:#111827">🏅 +${stg.medalReward}</div>
+      `;
+      card.onclick = () => {
+        saveData.selectedStage = stg.id;
+        saveProgress();
+        window.sfx.playSummon();
+        renderLobbyStages();
+      };
+      grid.appendChild(card);
+    });
   }
 
   function renderMythicRecipeBar() {
@@ -2173,6 +2525,19 @@
 
   document.getElementById('btnLobbyCodex').onclick = openCodexModal;
   document.getElementById('btnIngameCodex').onclick = openCodexModal;
+  const btnLobbyRelics = document.getElementById('btnLobbyRelics');
+  if (btnLobbyRelics) btnLobbyRelics.onclick = openRelicModal;
+  const btnOpenMission = document.getElementById('btnOpenMissionModal');
+  if (btnOpenMission) btnOpenMission.onclick = openMissionModal;
+  const btnDefNext = document.getElementById('btnDefNextStage');
+  if (btnDefNext) {
+    btnDefNext.onclick = () => {
+      saveData.selectedStage = Math.min(window.POKE_DATA.stages.length, (saveData.selectedStage || 1) + 1);
+      saveProgress();
+      renderLobbyStages();
+      startGame(state.mode);
+    };
+  }
 
   document.getElementById('btnHome').onclick = () => {
     state.running = false;
@@ -2374,6 +2739,7 @@
   // Init & Loop
   window.addEventListener('resize', resizeCanvas);
   populateCodex();
+  renderLobbyStages();
   resizeCanvas();
 
   let lastTime = performance.now();

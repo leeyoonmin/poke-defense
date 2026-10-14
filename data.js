@@ -267,6 +267,149 @@ window.POKE_DATA = {
     { id: 144, name: '프리져', title: '전설의 빙결신 보스', hpMul: 26, spd: 0.75 },
     { id: 145, name: '썬더', title: '전설의 뇌신 보스', hpMul: 28, spd: 0.82 },
     { id: 146, name: '파이어', title: '전설의 화신 보스', hpMul: 32, spd: 0.78 }
+  ],
+
+  // 1. 5-Stage Progression System with Region Modifiers
+  stages: [
+    {
+      id: 1,
+      name: 'STAGE 1. 태초마을 초원',
+      sub: '입문 30 WAVE · 기본 밸런스',
+      icon: '🌲',
+      bossImg: 143,
+      maxWaves: 30,
+      hpMult: 1.0,
+      spdMult: 1.0,
+      baseArmor: 0,
+      doubleBoss: false,
+      enemyLimit: 100,
+      medalReward: 100
+    },
+    {
+      id: 2,
+      name: 'STAGE 2. 블루시티 해안',
+      sub: '40 WAVE · [기믹] 몬스터 이속 +25%',
+      icon: '🌊',
+      bossImg: 144,
+      maxWaves: 40,
+      hpMult: 1.25,
+      spdMult: 1.25,
+      baseArmor: 0,
+      doubleBoss: false,
+      enemyLimit: 100,
+      medalReward: 180
+    },
+    {
+      id: 3,
+      name: 'STAGE 3. 보라타운 유령탑',
+      sub: '50 WAVE · [기믹] 기본 방어갑옷 25% (방깎 필수!)',
+      icon: '👻',
+      bossImg: 145,
+      maxWaves: 50,
+      hpMult: 1.5,
+      spdMult: 1.08,
+      baseArmor: 0.25,
+      doubleBoss: false,
+      enemyLimit: 100,
+      medalReward: 280
+    },
+    {
+      id: 4,
+      name: 'STAGE 4. 홍련섬 화산 지대',
+      sub: '60 WAVE · [기믹] 10웨이브마다 더블 보스 출현!',
+      icon: '🌋',
+      bossImg: 383,
+      maxWaves: 60,
+      hpMult: 1.85,
+      spdMult: 1.12,
+      baseArmor: 0.15,
+      doubleBoss: true,
+      enemyLimit: 95,
+      medalReward: 420
+    },
+    {
+      id: 5,
+      name: 'STAGE 5. 석영고원 신들의 성전',
+      sub: '80 WAVE · [기믹] 한도 75마리 & 더블 초전설 보스!',
+      icon: '🏛️',
+      bossImg: 493,
+      maxWaves: 80,
+      hpMult: 2.3,
+      spdMult: 1.18,
+      baseArmor: 0.25,
+      doubleBoss: true,
+      enemyLimit: 75,
+      medalReward: 700
+    }
+  ],
+
+  // 2. In-Game Bounty Missions (Lucky Defense Style Instant Rewards!)
+  missions: [
+    { id: 'm_collector', title: '도감 수집가', desc: '서로 다른 1단 포켓몬 6종류 이상 동시 보유', gold: 80, gems: 0 },
+    { id: 'm_squad2', title: '분대 집결', desc: '3마리 풀분대(합성 대기) 슬롯 2개 동시 보유', gold: 40, gems: 2 },
+    { id: 'm_first3', title: '최종 진화의 힘', desc: '3단 최종진화 포켓몬 1마리 이상 보유', gold: 60, gems: 1 },
+    { id: 'm_shiny', title: '✨이로치 발견!', desc: '색이 다른(✨이로치) 포켓몬 1마리 이상 보유', gold: 100, gems: 2 },
+    { id: 'm_bounty', title: '현상금 사냥꾼', desc: '하단 [보스소환!]으로 부른 현상금 보스 처치', gold: 100, gems: 1 },
+    { id: 'm_mythic', title: '신화 강림', desc: '4단계 전설/신화 포켓몬 첫 소환 성공', gold: 150, gems: 3 },
+    { id: 'm_rich', title: '부자의 금고', desc: '보유 골드 350G 이상 달성 (금고 이자 활용!)', gold: 50, gems: 2 },
+    { id: 'm_army', title: '군단 사령관', desc: '내 섬의 총 포켓몬 마릿수(분대 합산) 15마리 달성', gold: 100, gems: 1 }
+  ],
+
+  // 3. Permanent Lobby Relics (Upgraded with Trainer Medals)
+  relics: [
+    {
+      id: 'safe_box',
+      name: '💰 부적금화 금고 (복리 이자)',
+      img: './assets/items/amulet-coin.png',
+      max: 5,
+      baseCost: 80,
+      desc: '매 웨이브 종료 시 현재 보유 골드의 +2%/Lv (최대 +10%)를 복리 이자로 추가 지급!'
+    },
+    {
+      id: 'lucky_charm',
+      name: '🍀 행운의 알 (도박 확률업)',
+      img: './assets/items/lucky-egg.png',
+      max: 5,
+      baseCost: 90,
+      desc: '레어(2단)·영웅(3단) 행운석 도박 성공 확률이 영구적으로 +3%/Lv 증가!'
+    },
+    {
+      id: 'shiny_charm',
+      name: '✨ 빛나는 부적 (이로치 확률업)',
+      img: './assets/items/moon-stone.png',
+      max: 5,
+      baseCost: 100,
+      desc: '공격력 1.5배인 [✨이로치 포켓몬] 등장 확률이 +1.5%/Lv (최대 12.5%) 증가!'
+    },
+    {
+      id: 'starter_fund',
+      name: '🎒 오박사의 초기 지원품',
+      img: './assets/items/poke-ball.png',
+      max: 5,
+      baseCost: 75,
+      desc: '게임 시작 시 초기 골드 +25G/Lv 및 3레벨 달성 시 초기 보석 +1💎 추가!'
+    },
+    {
+      id: 'champ_crest',
+      name: '⚔️ 챔피언의 문장 (전체 공격력)',
+      img: './assets/items/fire-stone.png',
+      max: 10,
+      baseCost: 85,
+      desc: '내 모든 포켓몬의 기본 공격력이 영구적으로 +8%/Lv 증가!'
+    }
+  ],
+
+  // 4. Wave 10 Boss Kill Gym Badges (Roguelike 3-Choice Buffs)
+  gymBadges: [
+    { id: 'boulder', icon: '🪨', name: '회색배지 (웅의 결의)', desc: '모든 포켓몬의 기절(Stun) 지속시간 +0.4초 & 바위·강철·땅 공격력 +40%' },
+    { id: 'cascade', icon: '💧', name: '블루배지 (이슬의 급류)', desc: '모든 포켓몬의 공격속도 +18% & 물 포켓몬 둔화 효과 강화' },
+    { id: 'thunder', icon: '⚡', name: '갈색배지 (마티스의 뇌격)', desc: '피카츄 계열 골드·보석 채굴 확률 1.6배 & 전기 공격력 +35%' },
+    { id: 'rainbow', icon: '🌿', name: '무지개배지 (민화의 비전)', desc: '모든 방어력 감소(방깎) 효과 +20%p 증폭 & 지속 피해 1.5배' },
+    { id: 'marsh', icon: '🔮', name: '골드배지 (초련의 염력)', desc: '보스 몬스터 대상 모든 포켓몬의 피해량 +35% 증가' },
+    { id: 'volcano', icon: '🔥', name: '진홍배지 (강연의 열정)', desc: '모든 포켓몬 기본 공격력 +25% & 광역 폭발 범위 증가' },
+    { id: 'rocket', icon: '🚀', name: '로켓단 비밀 자금', desc: '즉시 +140G 획득 & 소환 비용 영구 -4G 할인!' },
+    { id: 'jeweler', icon: '💎', name: '보석 세공사의 축복', desc: '즉시 행운석 +4💎 획득 & 이번 판 도박 성공률 +12% 증가!' },
+    { id: 'evo_stone', icon: '🧬', name: '수수께끼 진화의 돌', desc: '즉시 내 섬에 랜덤 [3단 최종진화 포켓몬] 1마리 무료 소환! (이로치 확률 40%)' }
   ]
 };
 

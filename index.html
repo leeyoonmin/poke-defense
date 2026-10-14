@@ -57,12 +57,17 @@
         </div>
       </div>
 
-      <!-- Left Floating Mythic Summon Dock -->
+      <!-- Left Floating Mythic & Mission Dock -->
       <div id="mythicAlertBar" class="mythic-floating-dock">
         <button id="btnOpenMythicDock" class="mythic-orb-btn" type="button">
           <img src="./assets/sprites/384.png" alt="신화" />
           <span>신화조합</span>
         </button>
+        <button id="btnOpenMissionModal" class="mythic-orb-btn mission-orb-btn" type="button">
+          <img src="./assets/items/lucky-egg.png" alt="미션" />
+          <span id="missionCountBtnTxt">미션 0/8</span>
+        </button>
+        <div id="ownedBadgesRow" class="owned-badges-row"></div>
         <div id="mythicButtonsContainer" class="mythic-ready-list"></div>
       </div>
 
@@ -213,7 +218,16 @@
         </div>
 
         <h1 class="game-title">포켓몬 운빨 디펜스</h1>
-        <p class="game-subtitle">초록 잔디 섬 위 3마리 분대 합성 &amp; 신화 레시피 협동 디펜스!</p>
+        <p class="game-subtitle">초록 잔디 섬 3마리 분대 합성 · 이로치 · 신화 레시피 디펜스!</p>
+
+        <!-- STAGE SELECTOR DECK IN LOBBY -->
+        <div class="def-stage-box">
+          <div class="def-stage-head">
+            <span>🗺️ 출격 지역(스테이지) 선택</span>
+            <span class="medal-pill">🏅 메달 <b id="lobbyMedals">150</b></span>
+          </div>
+          <div id="defStageGrid" class="def-stage-grid"></div>
+        </div>
 
         <div class="showcase-strip">
           <div class="showcase-unit"><img src="./assets/sprites/6.png" alt="리자몽" /><span>리자몽</span></div>
@@ -243,9 +257,10 @@
           </button>
         </div>
 
-        <div class="lobby-sub-actions">
-          <button id="btnLobbyCodex" class="game-3d-btn slate md">📖 진화/신화 도감</button>
-          <button id="btnInstallPwa" class="game-3d-btn amber md">📲 앱 설치 (PWA)</button>
+        <div class="lobby-sub-actions three-cols">
+          <button id="btnLobbyRelics" class="game-3d-btn amber md">🏦 유물 연구소</button>
+          <button id="btnLobbyCodex" class="game-3d-btn slate md">📖 조합 도감</button>
+          <button id="btnInstallPwa" class="game-3d-btn blue md">📲 앱 설치</button>
         </div>
       </div>
     </div>
@@ -323,9 +338,48 @@
         <p id="resultSummary" class="modal-desc"></p>
         <div class="result-stats" id="resultStats"></div>
         <div class="mode-buttons">
-          <button id="btnRestartGame" class="game-3d-btn green lg">🔄 다시 도전하기</button>
+          <button id="btnDefNextStage" class="game-3d-btn amber lg hidden" style="justify-content:center">⚔️ 다음 스테이지 출격하기!</button>
+          <button id="btnRestartGame" class="game-3d-btn green lg" style="justify-content:center">🔄 다시 도전하기</button>
           <button id="btnBackToLobby" class="game-3d-btn slate md">🏠 타이틀 로비로</button>
         </div>
+      </div>
+    </div>
+
+    <!-- ================= IN-GAME BOUNTY MISSIONS MODAL ================= -->
+    <div id="missionModal" class="overlay">
+      <div class="modal-card game-modal-box wide-modal">
+        <div class="modal-header">
+          <h2>🎯 인게임 현상금 미션 (자동 달성 &amp; 즉시 지급!)</h2>
+          <button class="close-btn" data-close="missionModal">✕</button>
+        </div>
+        <p class="modal-desc">전투 중 조건을 만족하는 순간 골드(🪙)와 행운석(💎)이 즉시 지급됩니다!</p>
+        <div id="missionListContainer" class="codex-content active"></div>
+      </div>
+    </div>
+
+    <!-- ================= PERMANENT RELIC LAB MODAL ================= -->
+    <div id="relicModal" class="overlay">
+      <div class="modal-card game-modal-box wide-modal">
+        <div class="modal-header">
+          <h2>🏦 오박사의 유물 연구소 (영구 패시브 강화)</h2>
+          <button class="close-btn" data-close="relicModal">✕</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span class="modal-desc" style="margin:0">스테이지 클리어 시 획득하는 메달로 금고 이자·확률을 영구 강화하세요!</span>
+          <span class="medal-pill">🏅 <b id="relicModalMedals">0</b></span>
+        </div>
+        <div id="relicListContainer" class="codex-content active"></div>
+      </div>
+    </div>
+
+    <!-- ================= GYM BADGE 3-CHOICE MODAL (WAVE 10 BOSS REWARD) ================= -->
+    <div id="badgeModal" class="overlay">
+      <div class="modal-card game-modal-box">
+        <div class="modal-header">
+          <h2>🎖️ 보스 격파! 체육관 배지 특전 선택</h2>
+        </div>
+        <p class="modal-desc">보스를 물리쳤습니다! 이번 판에 적용할 강력한 배지 특전 1개를 선택하세요.</p>
+        <div id="badgeChoicesContainer" class="codex-content active"></div>
       </div>
     </div>
   </div>
