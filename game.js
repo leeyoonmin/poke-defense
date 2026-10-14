@@ -141,12 +141,12 @@
     const w = geom.w;
     const h = geom.h;
 
-    // Exact normalized coordinates matching lucky_map_fitted.png
+    // Exact normalized coordinates matching lucky_map_fitted.png (tight crop)
     const leftRoadX = w * 0.072;
     const rightRoadX = w * 0.925;
-    const topRoadY = h * 0.213;
+    const topRoadY = h * 0.167;
     const midRoadY = h * 0.510;
-    const botRoadY = h * 0.793;
+    const botRoadY = h * 0.840;
 
     geom.trackRect = {
       x: leftRoadX,
@@ -165,14 +165,14 @@
 
     const cols = 6;
     const rows = 3;
-    // Pure green grass surface horizontal span (inside the cliff borders)
-    const islandLeft = w * 0.178;
-    const islandW = w * 0.642;
+    // Full grass island horizontal span (0.136 .. 0.870 -> fills the island edge-to-edge!)
+    const islandLeft = w * 0.136;
+    const islandW = w * 0.734;
     const cellW = islandW / cols;
 
-    // Top Grass Island pure flat grass surface: y = 0.284 .. 0.408
-    const topIslandY = h * 0.284;
-    const topIslandH = h * 0.124;
+    // Top Grass Island full surface: y = 0.230 .. 0.416
+    const topIslandY = h * 0.230;
+    const topIslandH = h * 0.186;
     const topCellH = topIslandH / rows;
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
@@ -182,14 +182,14 @@
           w: cellW,
           h: topCellH,
           cx: islandLeft + (c + 0.5) * cellW,
-          cy: topIslandY + (r + 0.55) * topCellH
+          cy: topIslandY + (r + 0.56) * topCellH
         });
       }
     }
 
-    // Bottom Grass Island pure flat grass surface: y = 0.572 .. 0.696
-    const botIslandY = h * 0.572;
-    const botIslandH = h * 0.124;
+    // Bottom Grass Island full surface: y = 0.570 .. 0.756
+    const botIslandY = h * 0.570;
+    const botIslandH = h * 0.186;
     const botCellH = botIslandH / rows;
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
@@ -199,7 +199,7 @@
           w: cellW,
           h: botCellH,
           cx: islandLeft + (c + 0.5) * cellW,
-          cy: botIslandY + (r + 0.55) * botCellH
+          cy: botIslandY + (r + 0.56) * botCellH
         });
       }
     }
@@ -1433,20 +1433,20 @@
       let offsets = [{ dx: 0, dy: 0 }];
       if (stackCount === 2) {
         offsets = [
-          { dx: -r.w * 0.15, dy: -1 },
-          { dx: r.w * 0.15, dy: 2 }
+          { dx: -r.w * 0.18, dy: -2 },
+          { dx: r.w * 0.18, dy: 3 }
         ];
       } else if (stackCount >= 3) {
         offsets = [
-          { dx: 0, dy: -4 },
-          { dx: -r.w * 0.17, dy: 3 },
-          { dx: r.w * 0.17, dy: 3 }
+          { dx: 0, dy: -6 },
+          { dx: -r.w * 0.21, dy: 4 },
+          { dx: r.w * 0.21, dy: 4 }
         ];
       }
 
       const scale = 1 + (unit.spawnAnim || 0) * 0.35;
-      const unitScale = meta.stage === 4 ? 1.35 : meta.stage === 3 ? 1.18 : stackCount > 1 ? 0.86 : 1.02;
-      const baseSize = Math.max(32, Math.min(r.w * 0.72, r.h * 1.18)) * unitScale * scale;
+      const unitScale = meta.stage === 4 ? 1.48 : meta.stage === 3 ? 1.28 : stackCount > 1 ? 0.96 : 1.15;
+      const baseSize = Math.max(42, Math.min(r.w * 0.86, r.h * 1.22)) * unitScale * scale;
 
       // Foot-anchored rendering: (ux, uy) is the exact ground foot position on the grass island!
       offsets.forEach((off, mIdx) => {
