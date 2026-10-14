@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poke-lucky-defense-v6';
+const CACHE_NAME = 'poke-lucky-defense-v7';
 const SPRITE_IDS = [
   1, 2, 3, 4, 5, 6, 7, 8, 9, 19, 25, 26, 41, 52, 63, 64, 65, 66, 74, 88,
   92, 93, 94, 95, 109, 112, 123, 130, 142, 143, 144, 145, 146, 147, 148,
@@ -12,7 +12,7 @@ const ITEMS = [
   'leaf-stone', 'moon-stone'
 ];
 const PIXELS = [
-  'arena_bg.png', 'arena_lucky.png', 'lucky_map_bg.png', 'title_banner.png', 'tile_slot.png', 'tile_track.png'
+  'arena_bg.png', 'arena_lucky.png', 'lucky_map_bg.png', 'lucky_map_fitted.png', 'title_banner.png', 'tile_slot.png', 'tile_track.png'
 ];
 
 const CORE_ASSETS = [

@@ -44,7 +44,7 @@
   }
 
   // Preload core pixel assets & animated sheets
-  const bgImg = getImg('./assets/pixel/lucky_map_bg.png');
+  const bgImg = getImg('./assets/pixel/lucky_map_fitted.png');
   const slotImg = getImg('./assets/pixel/tile_slot.png');
   const trackImg = getImg('./assets/pixel/tile_track.png');
   Object.keys(window.UNIT_BY_ID).forEach(id => {
@@ -141,12 +141,12 @@
     const w = geom.w;
     const h = geom.h;
 
-    // Exact normalized coordinates matching fullscreen lucky_map_bg.png
+    // Exact normalized coordinates matching lucky_map_fitted.png
     const leftRoadX = w * 0.072;
     const rightRoadX = w * 0.925;
-    const topRoadY = h * 0.271;
-    const midRoadY = h * 0.481;
-    const botRoadY = h * 0.679;
+    const topRoadY = h * 0.213;
+    const midRoadY = h * 0.510;
+    const botRoadY = h * 0.793;
 
     geom.trackRect = {
       x: leftRoadX,
@@ -165,13 +165,14 @@
 
     const cols = 6;
     const rows = 3;
-    const islandLeft = w * 0.155;
-    const islandW = w * 0.685;
+    // Pure green grass surface horizontal span (inside the cliff borders)
+    const islandLeft = w * 0.178;
+    const islandW = w * 0.642;
     const cellW = islandW / cols;
 
-    // Top Grass Island (Partner / Friend Zone): y = 0.307 .. 0.427
-    const topIslandY = h * 0.307;
-    const topIslandH = h * 0.120;
+    // Top Grass Island pure flat grass surface: y = 0.284 .. 0.408
+    const topIslandY = h * 0.284;
+    const topIslandH = h * 0.124;
     const topCellH = topIslandH / rows;
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
@@ -181,14 +182,14 @@
           w: cellW,
           h: topCellH,
           cx: islandLeft + (c + 0.5) * cellW,
-          cy: topIslandY + (r + 0.5) * topCellH
+          cy: topIslandY + (r + 0.55) * topCellH
         });
       }
     }
 
-    // Bottom Grass Island (My Player Zone): y = 0.517 .. 0.637
-    const botIslandY = h * 0.517;
-    const botIslandH = h * 0.120;
+    // Bottom Grass Island pure flat grass surface: y = 0.572 .. 0.696
+    const botIslandY = h * 0.572;
+    const botIslandH = h * 0.124;
     const botCellH = botIslandH / rows;
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
@@ -198,7 +199,7 @@
           w: cellW,
           h: botCellH,
           cx: islandLeft + (c + 0.5) * cellW,
-          cy: botIslandY + (r + 0.5) * botCellH
+          cy: botIslandY + (r + 0.55) * botCellH
         });
       }
     }
@@ -1428,44 +1429,45 @@
       const uPhase = unit.animPhase || 0;
       const idleSquash = Math.sin(uPhase * 0.6) * 0.045 + atkRatio * 0.13;
 
-      // Determine squad sub-positions (1 unit = center, 2 units = pair, 3 units = triangle squad like Lucky Defense!)
+      // Determine squad sub-positions anchored strictly inside the slot cell on the grass!
       let offsets = [{ dx: 0, dy: 0 }];
       if (stackCount === 2) {
         offsets = [
-          { dx: -r.w * 0.16, dy: -2 },
-          { dx: r.w * 0.16, dy: 3 }
+          { dx: -r.w * 0.15, dy: -1 },
+          { dx: r.w * 0.15, dy: 2 }
         ];
       } else if (stackCount >= 3) {
         offsets = [
-          { dx: 0, dy: -6 },
-          { dx: -r.w * 0.19, dy: 5 },
-          { dx: r.w * 0.19, dy: 5 }
+          { dx: 0, dy: -4 },
+          { dx: -r.w * 0.17, dy: 3 },
+          { dx: r.w * 0.17, dy: 3 }
         ];
       }
 
       const scale = 1 + (unit.spawnAnim || 0) * 0.35;
-      const unitScale = meta.stage === 4 ? 1.55 : meta.stage === 3 ? 1.32 : stackCount > 1 ? 0.96 : 1.15;
-      const baseSize = Math.max(36, Math.min(r.w * 0.78, r.h * 1.55)) * unitScale * scale;
+      const unitScale = meta.stage === 4 ? 1.35 : meta.stage === 3 ? 1.18 : stackCount > 1 ? 0.86 : 1.02;
+      const baseSize = Math.max(32, Math.min(r.w * 0.72, r.h * 1.18)) * unitScale * scale;
 
-      // Draw circular/oval ground aura under each member of the squad
+      // Foot-anchored rendering: (ux, uy) is the exact ground foot position on the grass island!
       offsets.forEach((off, mIdx) => {
         const ux = r.cx + off.dx + lx;
         const uy = r.cy + off.dy + ly;
-        const auraW = baseSize * 0.36;
-        const auraH = baseSize * 0.16;
+        const auraW = baseSize * 0.34;
+        const auraH = baseSize * 0.14;
 
         ctx.fillStyle = auraFill[meta.stage] || auraFill[1];
         ctx.strokeStyle = canMerge3 ? '#fde047' : (auraColors[meta.stage] || auraColors[1]);
-        ctx.lineWidth = canMerge3 || (!isAlly && state.selectedSlot === idx) ? 2.8 : 2.0;
+        ctx.lineWidth = canMerge3 || (!isAlly && state.selectedSlot === idx) ? 2.6 : 1.8;
         ctx.beginPath();
-        ctx.ellipse(ux, uy + baseSize * 0.28, auraW, auraH, 0, 0, Math.PI * 2);
+        ctx.ellipse(ux, uy + 2, auraW, auraH, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
 
+        // Draw sprite standing ON TOP of the foot aura (shifted up by 0.22 * baseSize)
         drawAnimatedSprite(
           unit.id,
           ux,
-          uy,
+          uy - baseSize * 0.22,
           baseSize,
           uPhase + mIdx * 1.3,
           !!unit.faceRight,
@@ -1475,18 +1477,18 @@
         );
       });
 
-      // Small clean cooldown / mana bar under the unit group
-      const barW = 24;
-      const barH = 3.5;
+      // Small clean cooldown / mana bar right under the foot aura
+      const barW = 22;
+      const barH = 3;
       ctx.fillStyle = 'rgba(0,0,0,0.65)';
-      ctx.fillRect(r.cx - barW / 2, r.cy + r.h * 0.36, barW, barH);
+      ctx.fillRect(r.cx - barW / 2, r.cy + 7, barW, barH);
       ctx.fillStyle = meta.stage >= 3 ? '#facc15' : '#38bdf8';
       const cdPct = Math.max(0.15, Math.min(1, 1 - (unit.cooldown || 0)));
-      ctx.fillRect(r.cx - barW / 2, r.cy + r.h * 0.36, barW * cdPct, barH);
+      ctx.fillRect(r.cx - barW / 2, r.cy + 7, barW * cdPct, barH);
 
       // 3-Merge Ready Floating Pill ("합성⬆")
       if (canMerge3 && !isAlly) {
-        const py = r.cy - r.h * 0.38 + Math.sin(uPhase * 0.8) * 2;
+        const py = r.cy - baseSize * 0.62 + Math.sin(uPhase * 0.8) * 2;
         ctx.fillStyle = '#facc15';
         ctx.strokeStyle = '#000';
         ctx.lineWidth = 1.5;
