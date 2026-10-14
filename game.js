@@ -44,7 +44,7 @@
   }
 
   // Preload core pixel assets & animated sheets
-  const bgImg = getImg('./assets/pixel/arena_lucky.png');
+  const bgImg = getImg('./assets/pixel/lucky_map_bg.png');
   const slotImg = getImg('./assets/pixel/tile_slot.png');
   const trackImg = getImg('./assets/pixel/tile_track.png');
   Object.keys(window.UNIT_BY_ID).forEach(id => {
@@ -141,12 +141,12 @@
     const w = geom.w;
     const h = geom.h;
 
-    // Exact normalized coordinates matching arena_lucky.png (two grass islands + middle shared lane)
+    // Exact normalized coordinates matching fullscreen lucky_map_bg.png
     const leftRoadX = w * 0.072;
     const rightRoadX = w * 0.925;
-    const topRoadY = h * 0.193;
-    const midRoadY = h * 0.502;
-    const botRoadY = h * 0.793;
+    const topRoadY = h * 0.271;
+    const midRoadY = h * 0.481;
+    const botRoadY = h * 0.679;
 
     geom.trackRect = {
       x: leftRoadX,
@@ -169,9 +169,9 @@
     const islandW = w * 0.685;
     const cellW = islandW / cols;
 
-    // Top Grass Island (Partner / Friend Zone): y = 0.245 .. 0.422
-    const topIslandY = h * 0.245;
-    const topIslandH = h * 0.177;
+    // Top Grass Island (Partner / Friend Zone): y = 0.307 .. 0.427
+    const topIslandY = h * 0.307;
+    const topIslandH = h * 0.120;
     const topCellH = topIslandH / rows;
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
@@ -186,9 +186,9 @@
       }
     }
 
-    // Bottom Grass Island (My Player Zone): y = 0.555 .. 0.732
-    const botIslandY = h * 0.555;
-    const botIslandH = h * 0.177;
+    // Bottom Grass Island (My Player Zone): y = 0.517 .. 0.637
+    const botIslandY = h * 0.517;
+    const botIslandH = h * 0.120;
     const botCellH = botIslandH / rows;
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
@@ -1502,7 +1502,8 @@
   // ================= HUD & INSPECTOR UPDATES =================
   function updateHud() {
     document.getElementById('waveText').textContent = `WAVE ${state.wave}`;
-    document.getElementById('waveTimer').textContent = `${Math.ceil(state.waveTimer)}s`;
+    const sec = Math.max(0, Math.ceil(state.waveTimer));
+    document.getElementById('waveTimer').textContent = `00:${String(sec).padStart(2, '0')}`;
 
     const eCount = state.enemies.length;
     document.getElementById('enemyCountText').textContent = `${eCount} / ${state.enemyLimit}`;
@@ -1529,26 +1530,26 @@
     });
 
     const mergeBtn = document.getElementById('btnMergeAll');
-    document.getElementById('mergeReadyBadge').textContent = mergeGroups > 0 ? `가능 ${mergeGroups}건!` : '3마리 모으기';
+    document.getElementById('mergeReadyBadge').textContent = mergeGroups > 0 ? `${mergeGroups}건 가능!` : '3마리합성';
     if (mergeGroups > 0) mergeBtn.classList.add('MergeGlow');
     else mergeBtn.classList.remove('MergeGlow');
 
     // Bounty button
     const bountyTxt = document.getElementById('bountyTimerText');
     bountyTxt.textContent = state.bountyCooldown > 0
-      ? `쿨타임 ${Math.ceil(state.bountyCooldown)}s`
-      : '즉시 호출 (+2💎)';
+      ? `${Math.ceil(state.bountyCooldown)}s`
+      : '+2💎 보스';
 
     // Upgrades
     const costBasic = 30 + (state.upgrades.basic - 1) * 25;
     const costStage3 = state.upgrades.stage3;
     const costLuck = 50 + (state.upgrades.luck - 1) * 40;
     document.getElementById('lvlBasic').textContent = `Lv.${state.upgrades.basic}`;
-    document.getElementById('costBasic').textContent = `${costBasic} G`;
+    document.getElementById('costBasic').textContent = `🪙 ${costBasic}`;
     document.getElementById('lvlStage3').textContent = `Lv.${state.upgrades.stage3}`;
-    document.getElementById('costStage3').textContent = `💎 ${costStage3} 보석`;
+    document.getElementById('costStage3').textContent = `💎 ${costStage3}`;
     document.getElementById('lvlLuck').textContent = `Lv.${state.upgrades.luck}`;
-    document.getElementById('costLuck').textContent = `${costLuck} G`;
+    document.getElementById('costLuck').textContent = `🪙 ${costLuck}`;
 
     // Update Mythic Recipe Bar
     renderMythicRecipeBar();
@@ -1905,10 +1906,44 @@
     btn.onclick = () => sendEmojiPing(btn.getAttribute('data-emo'), false);
   });
 
-  // Main Deck Actions
-  document.getElementById('btnSummon').onclick = summonPokemon;
+  // Main Deck Actions & Floating Popups
+  document.getElementById('btnSummon').onclick = () => {
+    document.getElementById('gambleDrawer').classList.add('hidden');
+    document.getElementById('upgradeDrawer').classList.add('hidden');
+    summonPokemon();
+  };
   document.getElementById('btnMergeAll').onclick = mergeAllAvailable;
   document.getElementById('btnBountyBoss').onclick = callBountyBoss;
+
+  const btnOpenMythicDock = document.getElementById('btnOpenMythicDock');
+  if (btnOpenMythicDock) {
+    btnOpenMythicDock.onclick = openCodexModal;
+  }
+
+  const btnToggleGamble = document.getElementById('btnToggleGamble');
+  if (btnToggleGamble) {
+    btnToggleGamble.onclick = () => {
+      document.getElementById('upgradeDrawer').classList.add('hidden');
+      document.getElementById('unitInspector').classList.add('hidden');
+      document.getElementById('gambleDrawer').classList.toggle('hidden');
+    };
+  }
+
+  const btnToggleUpgrade = document.getElementById('btnToggleUpgrade');
+  if (btnToggleUpgrade) {
+    btnToggleUpgrade.onclick = () => {
+      document.getElementById('gambleDrawer').classList.add('hidden');
+      document.getElementById('unitInspector').classList.add('hidden');
+      document.getElementById('upgradeDrawer').classList.toggle('hidden');
+    };
+  }
+
+  document.querySelectorAll('.drawer-close').forEach(btn => {
+    btn.onclick = () => {
+      const id = btn.getAttribute('data-close-drawer');
+      if (id) document.getElementById(id).classList.add('hidden');
+    };
+  });
 
   // Inspector Actions
   document.getElementById('btnMergeSelected').onclick = () => {
@@ -1987,10 +2022,25 @@
     }
   };
 
-  // Service Worker Registration
+  // Service Worker Registration with Instant Auto-Update for Installed PWAs
   if ('serviceWorker' in navigator) {
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (refreshing) return;
+      refreshing = true;
+      window.location.reload();
+    });
+
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js').catch(() => {});
+      navigator.serviceWorker
+        .register('./sw.js', { updateViaCache: 'none' })
+        .then((reg) => {
+          reg.update();
+          document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') reg.update();
+          });
+        })
+        .catch(() => {});
     });
   }
 
