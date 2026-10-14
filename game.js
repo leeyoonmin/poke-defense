@@ -2062,6 +2062,8 @@
   function openMissionModal() {
     const box = document.getElementById('missionListContainer');
     if (box && window.POKE_DATA.missions) {
+      box.classList.add('active');
+      box.style.display = 'flex';
       box.innerHTML = window.POKE_DATA.missions.map(ms => {
         const done = state.completedMissions.has(ms.id);
         const rewardStr = [ms.gold ? `🪙+${ms.gold}G` : '', ms.gems ? `💎+${ms.gems}` : ''].filter(Boolean).join(' · ');
@@ -2084,6 +2086,8 @@
     if (medalEl) medalEl.textContent = (saveData.medals || 0).toLocaleString();
     const box = document.getElementById('relicListContainer');
     if (box && window.POKE_DATA.relics) {
+      box.classList.add('active');
+      box.style.display = 'flex';
       box.innerHTML = '';
       window.POKE_DATA.relics.forEach(rel => {
         const lvl = getRelicLvl(rel.id);
@@ -2131,6 +2135,8 @@
     const shuffled = [...pool].sort(() => Math.random() - 0.5).slice(0, 3);
     const box = document.getElementById('badgeChoicesContainer');
     if (!box) return;
+    box.classList.add('active');
+    box.style.display = 'flex';
     box.innerHTML = '';
 
     shuffled.forEach(bg => {
@@ -2559,7 +2565,7 @@
   document.querySelectorAll('.codex-tab').forEach(tab => {
     tab.onclick = () => {
       document.querySelectorAll('.codex-tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.codex-content').forEach(c => c.classList.remove('active'));
+      document.querySelectorAll('#codexModal .codex-content').forEach(c => c.classList.remove('active'));
       tab.classList.add('active');
       document.getElementById(tab.getAttribute('data-tab')).classList.add('active');
     };
