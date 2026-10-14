@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poke-lucky-defense-v2';
+const CACHE_NAME = 'poke-lucky-defense-v3';
 const SPRITE_IDS = [
   1, 2, 3, 4, 5, 6, 7, 8, 9, 19, 25, 26, 41, 52, 63, 64, 65, 66, 74, 88,
   92, 93, 94, 95, 109, 112, 123, 130, 142, 143, 144, 145, 146, 147, 148,
@@ -49,6 +49,31 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
+  const url = new URL(e.request.url);
+  const isCodeFile =
+    e.request.mode === 'navigate' ||
+    url.pathname.endsWith('/') ||
+    url.pathname.endsWith('.html') ||
+    url.pathname.endsWith('.js') ||
+    url.pathname.endsWith('.css') ||
+    url.pathname.endsWith('.json');
+
+  if (isCodeFile) {
+    // Network-First for code/HTML so installed PWAs always get live updates immediately
+    e.respondWith(
+      fetch(e.request, { cache: 'no-cache' })
+        .then(resp => {
+          if (resp && resp.status === 200) {
+            const clone = resp.clone();
+            caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+          }
+          return resp;
+        })
+        .catch(() => caches.match(e.request))
+    );
+    return;
+  }
+
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request))
   );
