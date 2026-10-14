@@ -3,8 +3,14 @@
   const canvas = document.getElementById('gameCanvas');
   const ctx = canvas.getContext('2d');
 
-  // Preload Pixel & Sprite Images
+  // Preload Pixel, Sprite & 5th-Gen Animated Sprite Sheet Images
   const IMG_CACHE = {};
+  let ANIM_META = {};
+  fetch('./assets/anim/meta.json')
+    .then(r => r.json())
+    .then(data => { ANIM_META = data; })
+    .catch(() => {});
+
   function getImg(src) {
     if (!IMG_CACHE[src]) {
       const img = new Image();
@@ -14,13 +20,45 @@
     return IMG_CACHE[src];
   }
 
-  // Preload core pixel assets
+  function drawAnimatedSprite(id, cx, cy, size, phase = 0, flipX = false, tilt = 0, squash = 0, flash = false) {
+    const key = String(id);
+    const meta = ANIM_META[key];
+    const animSheet = meta ? getImg(`./assets/anim/${key}.png`) : null;
+    const fallback = getImg(`./assets/sprites/${key}.png`);
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    if (flipX) ctx.scale(-1, 1);
+    if (tilt) ctx.rotate(tilt);
+    if (squash) ctx.scale(1 + squash, 1 - squash);
+    if (flash) ctx.filter = 'brightness(2.8) contrast(1.8)';
+
+    if (animSheet && animSheet.complete && animSheet.naturalWidth > 0 && meta && meta.frames > 0) {
+      const frameIdx = Math.floor(phase) % meta.frames;
+      const fw = meta.size;
+      ctx.drawImage(animSheet, frameIdx * fw, 0, fw, fw, -size / 2, -size / 2, size, size);
+    } else if (fallback && fallback.complete && fallback.naturalWidth > 0) {
+      ctx.drawImage(fallback, -size / 2, -size / 2, size, size);
+    }
+    ctx.restore();
+  }
+
+  // Preload core pixel assets & animated sheets
   const bgImg = getImg('./assets/pixel/arena_bg.png');
   const slotImg = getImg('./assets/pixel/tile_slot.png');
   const trackImg = getImg('./assets/pixel/tile_track.png');
-  Object.keys(window.UNIT_BY_ID).forEach(id => getImg(`./assets/sprites/${id}.png`));
-  window.POKE_DATA.enemyPool.forEach(e => getImg(`./assets/sprites/${e.id}.png`));
-  window.POKE_DATA.bossPool.forEach(b => getImg(`./assets/sprites/${b.id}.png`));
+  Object.keys(window.UNIT_BY_ID).forEach(id => {
+    getImg(`./assets/sprites/${id}.png`);
+    getImg(`./assets/anim/${id}.png`);
+  });
+  window.POKE_DATA.enemyPool.forEach(e => {
+    getImg(`./assets/sprites/${e.id}.png`);
+    getImg(`./assets/anim/${e.id}.png`);
+  });
+  window.POKE_DATA.bossPool.forEach(b => {
+    getImg(`./assets/sprites/${b.id}.png`);
+    getImg(`./assets/anim/${b.id}.png`);
+  });
 
   // Game State
   const state = {
@@ -658,6 +696,15 @@
 
     if (!target) return false;
 
+    // Trigger attack lunge & facing on unit
+    const adx = target.pos.x - rect.cx;
+    const ady = target.pos.y - rect.cy;
+    const adist = Math.hypot(adx, ady) || 1;
+    slotUnit.attackAnim = 0.24;
+    slotUnit.lungeX = (adx / adist) * 7;
+    slotUnit.lungeY = (ady / adist) * 7;
+    slotUnit.faceRight = adx > 0;
+
     // Trigger attack projectile
     state.projectiles.push({
       x: rect.cx,
@@ -855,6 +902,7 @@
     const mult = 1 + (en.armorBreak || 0);
     const finalDmg = Math.max(1, Math.round(rawDmg * mult));
     en.hp -= finalDmg;
+    en.hitFlash = 0.11;
   }
 
   // Smart AI Partner Logic for 2-Player Co-op
@@ -946,6 +994,8 @@
       board.forEach((u, idx) => {
         if (!u) return;
         if (u.spawnAnim > 0) u.spawnAnim = Math.max(0, u.spawnAnim - dt * 2.5);
+        if (u.attackAnim > 0) u.attackAnim = Math.max(0, u.attackAnim - rawDt * 4.5);
+        u.animPhase = (u.animPhase || (idx * 1.7)) + rawDt * 9.5;
         u.cooldown -= dt;
         if (u.cooldown <= 0) {
           const stats = getUnitStats(u, idx, isAlly);
@@ -1014,7 +1064,8 @@
         continue;
       }
 
-      // Movement along track
+      // Movement along track & walk animation cycle
+      if (en.hitFlash > 0) en.hitFlash = Math.max(0, en.hitFlash - rawDt);
       if (en.stunTimer > 0) {
         en.stunTimer -= dt;
       } else {
@@ -1026,6 +1077,7 @@
           en.slowFactor = 1;
         }
         en.progress += en.spd * spdMul * dt;
+        en.walkPhase = (en.walkPhase || 0) + rawDt * 11 * spdMul;
       }
     }
 
@@ -1172,10 +1224,23 @@
         ctx.fill();
       }
 
-      const spr = getImg(`./assets/sprites/${en.id}.png`);
-      if (spr.complete && spr.naturalWidth > 0) {
-        ctx.drawImage(spr, pos.x - r, pos.y - r, r * 2, r * 2);
-      }
+      const phase = en.walkPhase || 0;
+      const hopY = en.stunTimer > 0 ? 0 : Math.abs(Math.sin(phase * 1.1)) * (en.isBoss ? 5.5 : 4.2);
+      const tilt = en.stunTimer > 0 ? 0 : Math.sin(phase * 1.1) * 0.13;
+      const squash = en.hitFlash > 0 ? 0.16 : Math.sin(phase * 2.2) * 0.06;
+      const flipX = pos.dir > 0; // Gen 5 sprites face left by default, so flip when moving right
+
+      drawAnimatedSprite(
+        en.id,
+        pos.x,
+        pos.y - hopY,
+        r * 2.2,
+        phase,
+        flipX,
+        tilt,
+        squash,
+        en.hitFlash > 0
+      );
 
       // HP Bar
       const bw = en.isBoss ? 54 : 30;
@@ -1377,13 +1442,26 @@
         ctx.fillRect(sx, sy, sw, sh);
       }
 
-      // Draw Pokemon Sprite
-      const spr = getImg(`./assets/sprites/${unit.id}.png`);
+      // Draw Animated Pokemon Sprite with Idle Breathe & Attack Lunge
       const scale = 1 + (unit.spawnAnim || 0) * 0.35;
-      const size = Math.min(sw, sh) * 0.84 * scale;
-      if (spr.complete && spr.naturalWidth > 0) {
-        ctx.drawImage(spr, r.cx - size / 2, r.cy - size / 2 - 2, size, size);
-      }
+      const size = Math.min(sw, sh) * 0.88 * scale;
+      const atkRatio = Math.sin(((unit.attackAnim || 0) / 0.24) * Math.PI);
+      const lx = (unit.lungeX || 0) * atkRatio;
+      const ly = (unit.lungeY || 0) * atkRatio;
+      const uPhase = unit.animPhase || 0;
+      const idleSquash = Math.sin(uPhase * 0.6) * 0.04 + atkRatio * 0.12;
+
+      drawAnimatedSprite(
+        unit.id,
+        r.cx + lx,
+        r.cy - 2 + ly,
+        size,
+        uPhase,
+        !!unit.faceRight,
+        0,
+        idleSquash,
+        false
+      );
 
       // Stage Stars / Grade Pill
       ctx.font = 'bold 9px sans-serif';
