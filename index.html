@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#7c3aed" />
+  <title>포켓몬 운빨 디펜스 — 3단 진화 & 신화 조합 타워디펜스</title>
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" href="./assets/icons/favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Noto+Sans+KR:wght@500;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./style.css" />
+  <!-- PeerJS for WebRTC P2P 2-Player Co-op -->
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js" defer></script>
+</head>
+<body>
+  <div id="app">
+    <!-- ================= TITLE / LOBBY OVERLAY ================= -->
+    <div id="lobbyOverlay" class="overlay active">
+      <div class="lobby-card pixel-box">
+        <div class="banner-wrap">
+          <img src="./assets/pixel/title_banner.png" alt="포켓몬 운빨 디펜스" class="title-banner-img" />
+          <div class="banner-badge">PIXEL TOWER DEFENSE × ORD</div>
+        </div>
+
+        <h1 class="game-title">포켓몬 운빨 디펜스</h1>
+        <p class="game-subtitle">3마리 합치기 3단 랜덤 진화 &amp; 원랜디식 전설/신화 레시피 조합!</p>
+
+        <div class="showcase-strip">
+          <div class="showcase-unit"><img src="./assets/sprites/6.png" alt="리자몽" /><span>리자몽</span></div>
+          <span class="plus">+</span>
+          <div class="showcase-unit"><img src="./assets/sprites/9.png" alt="거북왕" /><span>거북왕</span></div>
+          <span class="plus">+</span>
+          <div class="showcase-unit"><img src="./assets/sprites/3.png" alt="이상해꽃" /><span>이상해꽃</span></div>
+          <span class="arrow">▶</span>
+          <div class="showcase-unit mythic"><img src="./assets/sprites/384.png" alt="레쿠쟈" /><span>[신화] 레쿠쟈</span></div>
+        </div>
+
+        <div class="mode-buttons">
+          <button id="btnStartSolo" class="pixel-btn primary-btn">
+            <img src="./assets/items/poke-ball.png" class="btn-icon" alt="" />
+            <div>
+              <div class="btn-main">1인 솔로 디펜스 시작</div>
+              <div class="btn-sub">6×3 보드 · 80웨이브 제패 도전</div>
+            </div>
+          </button>
+
+          <button id="btnOpenCoopModal" class="pixel-btn coop-btn">
+            <img src="./assets/items/master-ball.png" class="btn-icon" alt="" />
+            <div>
+              <div class="btn-main">2인 협동 멀티플레이</div>
+              <div class="btn-sub">4자리 방 코드 P2P 연동 &amp; 스마트 AI 파트너</div>
+            </div>
+          </button>
+        </div>
+
+        <div class="lobby-sub-actions">
+          <button id="btnLobbyCodex" class="pixel-btn sm-btn">📖 진화/신화 조합표</button>
+          <button id="btnInstallPwa" class="pixel-btn sm-btn install-btn">📲 앱 설치 (PWA)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= 2P CO-OP ROOM MODAL ================= -->
+    <div id="coopModal" class="overlay">
+      <div class="modal-card pixel-box">
+        <div class="modal-header">
+          <h2>🤝 2인 협동 멀티플레이 대기실</h2>
+          <button class="close-btn" data-close="coopModal">✕</button>
+        </div>
+        <p class="modal-desc">상단 6×3 파트너 진영과 하단 6×3 내 진영이 중앙 사각형 트랙을 함께 방어합니다!</p>
+
+        <div class="coop-box">
+          <div class="coop-section">
+            <div class="coop-label">내 협동 방 코드 (친구에게 공유)</div>
+            <div class="room-code-display" id="myRoomCode">----</div>
+            <div id="coopStatusText" class="coop-status">방을 생성하거나 코드로 입장하세요</div>
+            <button id="btnCreateRoom" class="pixel-btn sm-btn">🔑 4자리 방 코드 생성</button>
+          </div>
+
+          <div class="coop-divider">또는</div>
+
+          <div class="coop-section">
+            <div class="coop-label">친구 방 코드 입력 (4자리 숫자)</div>
+            <div class="join-row">
+              <input type="text" id="joinCodeInput" maxlength="4" placeholder="예: 4821" inputmode="numeric" />
+              <button id="btnJoinRoom" class="pixel-btn sm-btn">입장</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="coop-ai-box">
+          <button id="btnStartAiCoop" class="pixel-btn primary-btn full-w">
+            🤖 스마트 AI 파트너와 즉시 2인 협동 시작!
+          </button>
+          <div class="ai-hint">* 친구가 접속하지 않아도 AI 트레이너가 상단 진영에서 실시간 소환/합성/신화 조합 및 이모티콘 소통을 수행합니다.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= CODEX / RECIPE MODAL ================= -->
+    <div id="codexModal" class="overlay">
+      <div class="modal-card pixel-box wide-modal">
+        <div class="modal-header">
+          <h2>📖 12대 가문 3단 진화 &amp; 신화 조합 도감</h2>
+          <button class="close-btn" data-close="codexModal">✕</button>
+        </div>
+        <div class="codex-tabs">
+          <button class="codex-tab active" data-tab="tabMythic">⚡ 전설/신화 레시피 (6종)</button>
+          <button class="codex-tab" data-tab="tabFamilies">🧬 1~3단 진화 가문 (12종)</button>
+        </div>
+        <div id="tabMythic" class="codex-content active"></div>
+        <div id="tabFamilies" class="codex-content"></div>
+      </div>
+    </div>
+
+    <!-- ================= PWA INSTALL GUIDE MODAL ================= -->
+    <div id="installModal" class="overlay">
+      <div class="modal-card pixel-box">
+        <div class="modal-header">
+          <h2>📲 홈 화면에 앱 설치 (PWA)</h2>
+          <button class="close-btn" data-close="installModal">✕</button>
+        </div>
+        <div class="install-steps">
+          <p><strong>iPhone / iPad (Safari):</strong> 하단 공유 버튼 <b>[📤]</b> 탭 → <b>[홈 화면에 추가]</b> 선택 시 전체화면 도트 게임 앱으로 실행됩니다.</p>
+          <p><strong>Android / Chrome:</strong> 브라우저 메뉴 <b>[⋮]</b> → <b>[앱 설치]</b> 또는 <b>[홈 화면에 추가]</b>를 선택하세요.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= GAME OVER / VICTORY MODAL ================= -->
+    <div id="resultModal" class="overlay">
+      <div class="modal-card pixel-box">
+        <h2 id="resultTitle">게임 종료</h2>
+        <p id="resultSummary" class="modal-desc"></p>
+        <div class="result-stats" id="resultStats"></div>
+        <div class="mode-buttons">
+          <button id="btnRestartGame" class="pixel-btn primary-btn">🔄 다시 도전하기</button>
+          <button id="btnBackToLobby" class="pixel-btn sm-btn">🏠 타이틀 로비로</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= MAIN IN-GAME HUD ================= -->
+    <header id="topHud" class="pixel-bar">
+      <div class="hud-top-row">
+        <div class="wave-badge">
+          <span class="wave-label" id="modeBadge">SOLO</span>
+          <strong id="waveText">WAVE 1</strong>
+          <span id="waveTimer" class="timer-pill">20s</span>
+        </div>
+
+        <div class="enemy-gauge-wrap" title="트랙 위 몬스터 수가 한도를 넘으면 패배합니다!">
+          <div class="gauge-top">
+            <span>👾 트랙 포화도</span>
+            <strong id="enemyCountText">0 / 80</strong>
+          </div>
+          <div class="gauge-bar">
+            <div id="enemyGaugeFill" class="gauge-fill"></div>
+          </div>
+        </div>
+
+        <div class="top-utility-btns">
+          <button id="btnSpeed" class="icon-pill" title="배속 전환">1x</button>
+          <button id="btnMute" class="icon-pill" title="사운드 켜기/끄기">🔊</button>
+          <button id="btnIngameCodex" class="icon-pill" title="신화 조합표">📖</button>
+          <button id="btnHome" class="icon-pill" title="로비로">🏠</button>
+        </div>
+      </div>
+
+      <div class="hud-resource-row">
+        <div class="res-chip gold-chip">
+          <img src="./assets/items/amulet-coin.png" alt="G" />
+          <span id="goldText">150</span><small>G</small>
+        </div>
+        <div class="res-chip gem-chip">
+          <img src="./assets/items/rare-candy.png" alt="Gem" />
+          <span id="gemText">3</span><small>보석</small>
+        </div>
+        <div class="res-chip unit-chip">
+          <img src="./assets/items/poke-ball.png" alt="Units" />
+          <span id="boardCountText">0 / 18</span>
+        </div>
+
+        <!-- Emoji Ping bar for Co-op -->
+        <div id="coopPingBar" class="ping-bar">
+          <button class="ping-btn" data-emo="🔥" title="화력 집중!">🔥</button>
+          <button class="ping-btn" data-emo="⚡" title="신화 가자!">⚡</button>
+          <button class="ping-btn" data-emo="👍" title="나이스!">👍</button>
+          <button class="ping-btn" data-emo="🆘" title="도와줘!">🆘</button>
+        </div>
+      </div>
+
+      <!-- ORD Style Mythic Ready Bar (Always shows recipes & lights up when ready!) -->
+      <div id="mythicAlertBar" class="mythic-bar">
+        <div class="mythic-bar-label">⚡ 신화 강림:</div>
+        <div id="mythicButtonsContainer" class="mythic-btn-scroll"></div>
+      </div>
+    </header>
+
+    <!-- ================= CANVAS BATTLE ARENA ================= -->
+    <main id="arenaWrap">
+      <canvas id="gameCanvas"></canvas>
+
+      <!-- Selected Tile Inspector Floating Bar -->
+      <div id="unitInspector" class="inspector-bar hidden">
+        <div class="insp-left">
+          <img id="inspSprite" src="./assets/sprites/25.png" alt="" />
+          <div class="insp-text">
+            <div class="insp-name-row">
+              <span id="inspStageBadge" class="stage-pill">1단</span>
+              <strong id="inspName">피카츄</strong>
+              <span id="inspCountBadge" class="count-pill">보유 1/3</span>
+            </div>
+            <div id="inspSkill" class="insp-skill">10만볼트 · 공격력 100</div>
+          </div>
+        </div>
+        <div class="insp-actions">
+          <button id="btnMergeSelected" class="pixel-btn merge-one-btn">🔼 3마리 합성 진화!</button>
+          <button id="btnSellSelected" class="pixel-btn sell-btn">💰 판매</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- ================= BOTTOM CONTROL DECK ================= -->
+    <footer id="bottomDeck" class="pixel-bar">
+      <!-- Action Tabs -->
+      <div class="deck-main-actions">
+        <button id="btnSummon" class="deck-btn summon-btn">
+          <img src="./assets/items/poke-ball.png" alt="" />
+          <div class="deck-btn-txt">
+            <span class="d-title">포켓몬 소환</span>
+            <span class="d-cost" id="summonCostText">20 G</span>
+          </div>
+        </button>
+
+        <button id="btnMergeAll" class="deck-btn merge-btn">
+          <img src="./assets/items/thunder-stone.png" alt="" />
+          <div class="deck-btn-txt">
+            <span class="d-title">일괄 3합성 진화</span>
+            <span class="d-cost" id="mergeReadyBadge">가능 0건</span>
+          </div>
+        </button>
+
+        <button id="btnBountyBoss" class="deck-btn bounty-btn">
+          <img src="./assets/items/master-ball.png" alt="" />
+          <div class="deck-btn-txt">
+            <span class="d-title">현상금 보스 호출</span>
+            <span class="d-cost" id="bountyTimerText">즉시 호출 (+2💎)</span>
+          </div>
+        </button>
+      </div>
+
+      <!-- Sub Row: Gamble & Upgrades -->
+      <div class="deck-sub-row">
+        <button id="btnGamble2" class="sub-card gamble-card">
+          <img src="./assets/items/great-ball.png" alt="" />
+          <div>
+            <div class="sc-name">레어 도박 (60%)</div>
+            <div class="sc-cost">💎 1 보석 → 2단</div>
+          </div>
+        </button>
+
+        <button id="btnGamble3" class="sub-card gamble-card epic">
+          <img src="./assets/items/ultra-ball.png" alt="" />
+          <div>
+            <div class="sc-name">영웅 도박 (35%)</div>
+            <div class="sc-cost">💎 2 보석 → 3단</div>
+          </div>
+        </button>
+
+        <button id="btnUpgBasic" class="sub-card upg-card">
+          <img src="./assets/items/fire-stone.png" alt="" />
+          <div>
+            <div class="sc-name">1·2단 강화 <span id="lvlBasic">Lv.1</span></div>
+            <div class="sc-cost" id="costBasic">30 G</div>
+          </div>
+        </button>
+
+        <button id="btnUpgStage3" class="sub-card upg-card">
+          <img src="./assets/items/water-stone.png" alt="" />
+          <div>
+            <div class="sc-name">3단·신화 강화 <span id="lvlStage3">Lv.1</span></div>
+            <div class="sc-cost" id="costStage3">💎 1 보석</div>
+          </div>
+        </button>
+
+        <button id="btnUpgLuck" class="sub-card upg-card">
+          <img src="./assets/items/lucky-egg.png" alt="" />
+          <div>
+            <div class="sc-name">고급소환 확률 <span id="lvlLuck">Lv.1</span></div>
+            <div class="sc-cost" id="costLuck">50 G</div>
+          </div>
+        </button>
+      </div>
+    </footer>
+  </div>
+
+  <script src="./data.js"></script>
+  <script src="./audio.js"></script>
+  <script src="./game.js"></script>
+</body>
+</html>
