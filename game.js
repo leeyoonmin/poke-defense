@@ -265,8 +265,9 @@
     }
 
     const stackCount = slotUnit.count || 1;
+    const allyPenalty = (isAlly && state.mode !== 'coop_p2p') ? 0.55 : 1.0;
     return {
-      dmg: Math.round(meta.dmg * dmgMul * stackCount),
+      dmg: Math.max(1, Math.round(meta.dmg * dmgMul * stackCount * allyPenalty)),
       rate: +(meta.rate * (1 + speedBonus)).toFixed(2),
       range: meta.range + 22
     };
@@ -637,17 +638,17 @@
   // Spawn Wave Enemy or Wave Boss
   function spawnWaveEnemy(isWaveBoss = false) {
     const w = state.wave;
-    const baseHp = Math.round(68 + Math.pow(w, 1.72) * 28);
+    const baseHp = Math.round(280 + Math.pow(w, 1.95) * 115);
 
     if (isWaveBoss) {
       const bossMeta = window.POKE_DATA.bossPool[Math.floor((w / 10 - 1)) % window.POKE_DATA.bossPool.length] || window.POKE_DATA.bossPool[0];
-      const hp = Math.round(baseHp * bossMeta.hpMul);
+      const hp = Math.round(baseHp * bossMeta.hpMul * 1.45);
       state.enemies.push({
         id: bossMeta.id,
         name: `[WAVE ${w} 보스] ${bossMeta.name}`,
         hp,
         maxHp: hp,
-        spd: 0.32 * bossMeta.spd,
+        spd: 0.38 * bossMeta.spd,
         progress: 0,
         isBoss: true,
         isBounty: false,
@@ -665,14 +666,16 @@
       addBanner(`🚨 WAVE ${w} 보스 [${bossMeta.name}] 등장!`, bossMeta.title, '#ef4444');
     } else {
       const eMeta = window.POKE_DATA.enemyPool[(w + state.spawnQueue) % window.POKE_DATA.enemyPool.length];
-      const hp = Math.round(baseHp * eMeta.hpMul * (state.mode === 'solo' ? 1 : 1.35));
+      const hp = Math.round(baseHp * eMeta.hpMul * 1.35);
+      // Alternate spawning between Top Entrance (0) and Bottom Player Entrance (4.0) so player island always gets direct action!
+      const startProg = (state.spawnQueue % 2 === 1) ? 4.0 : 0.0;
       state.enemies.push({
         id: eMeta.id,
         name: eMeta.name,
         hp,
         maxHp: hp,
-        spd: 0.42 * eMeta.spd,
-        progress: 0,
+        spd: 0.54 * eMeta.spd,
+        progress: startProg,
         isBoss: false,
         isBounty: false,
         armorBreak: 0,
@@ -943,7 +946,7 @@
     if (state.mode === 'coop_p2p') return;
     state.aiActionTimer -= dt;
     if (state.aiActionTimer > 0) return;
-    state.aiActionTimer = 1.6;
+    state.aiActionTimer = 3.6;
 
     // 1. Check if AI can summon a Mythic Recipe!
     for (const m of window.POKE_DATA.mythics) {
@@ -1005,7 +1008,7 @@
       if (state.spawnCooldown <= 0) {
         spawnWaveEnemy(false);
         state.spawnQueue--;
-        state.spawnCooldown = 0.34;
+        state.spawnCooldown = 0.25;
       }
     }
 
@@ -1017,9 +1020,9 @@
       }
       state.wave++;
       state.waveTimer = 22;
-      state.spawnQueue = 24 + Math.min(20, Math.floor(state.wave * 0.5));
+      state.spawnQueue = 28 + Math.min(28, Math.floor(state.wave * 0.75));
       state.gold += 30 + state.wave * 2;
-      state.allyGold += 45 + state.wave * 3;
+      state.allyGold += 28 + state.wave * 2;
 
       if (state.wave % 10 === 0) {
         spawnWaveEnemy(true);
