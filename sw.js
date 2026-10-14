@@ -12,7 +12,7 @@ const ITEMS = [
   'leaf-stone', 'moon-stone'
 ];
 const PIXELS = [
-  'arena_bg.png', 'title_banner.png', 'tile_slot.png', 'tile_track.png'
+  'arena_bg.png', 'arena_lucky.png', 'title_banner.png', 'tile_slot.png', 'tile_track.png'
 ];
 
 const CORE_ASSETS = [

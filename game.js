@@ -44,7 +44,7 @@
   }
 
   // Preload core pixel assets & animated sheets
-  const bgImg = getImg('./assets/pixel/arena_bg.png');
+  const bgImg = getImg('./assets/pixel/arena_lucky.png');
   const slotImg = getImg('./assets/pixel/tile_slot.png');
   const trackImg = getImg('./assets/pixel/tile_track.png');
   Object.keys(window.UNIT_BY_ID).forEach(id => {
@@ -138,95 +138,96 @@
   }
 
   function computeLayout() {
-    const padX = Math.max(28, geom.w * 0.085);
-    const padY = Math.max(28, geom.h * 0.065);
-    const tw = geom.w - padX * 2;
-    const th = geom.h - padY * 2;
-    geom.trackRect = { x: padX, y: padY, w: tw, h: th };
+    const w = geom.w;
+    const h = geom.h;
 
-    const innerMargin = Math.max(20, Math.min(tw, th) * 0.065);
-    const innerX = padX + innerMargin;
-    const innerY = padY + innerMargin;
-    const innerW = tw - innerMargin * 2;
-    const innerH = th - innerMargin * 2;
+    // Exact normalized coordinates matching arena_lucky.png (two grass islands + middle shared lane)
+    const leftRoadX = w * 0.072;
+    const rightRoadX = w * 0.925;
+    const topRoadY = h * 0.193;
+    const midRoadY = h * 0.502;
+    const botRoadY = h * 0.793;
+
+    geom.trackRect = {
+      x: leftRoadX,
+      y: topRoadY,
+      w: rightRoadX - leftRoadX,
+      h: botRoadY - topRoadY,
+      leftX: leftRoadX,
+      rightX: rightRoadX,
+      topY: topRoadY,
+      midY: midRoadY,
+      botY: botRoadY
+    };
 
     geom.myGridRects = [];
     geom.allyGridRects = [];
 
     const cols = 6;
     const rows = 3;
+    const islandLeft = w * 0.155;
+    const islandW = w * 0.685;
+    const cellW = islandW / cols;
 
-    if (state.mode === 'solo') {
-      // Solo: 6x3 centered inside track
-      const cellW = innerW / cols;
-      const cellH = Math.min(cellW * 1.05, (innerH * 0.78) / rows);
-      const totalH = cellH * rows;
-      const startY = innerY + (innerH - totalH) * 0.5;
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          geom.myGridRects.push({
-            x: innerX + c * cellW,
-            y: startY + r * cellH,
-            w: cellW,
-            h: cellH,
-            cx: innerX + (c + 0.5) * cellW,
-            cy: startY + (r + 0.5) * cellH
-          });
-        }
+    // Top Grass Island (Partner / Friend Zone): y = 0.245 .. 0.422
+    const topIslandY = h * 0.245;
+    const topIslandH = h * 0.177;
+    const topCellH = topIslandH / rows;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        geom.allyGridRects.push({
+          x: islandLeft + c * cellW,
+          y: topIslandY + r * topCellH,
+          w: cellW,
+          h: topCellH,
+          cx: islandLeft + (c + 0.5) * cellW,
+          cy: topIslandY + (r + 0.5) * topCellH
+        });
       }
-    } else {
-      // 2P Co-op: Top 6x3 Partner Board + Divider + Bottom 6x3 Player Board
-      const gapY = 16;
-      const halfH = (innerH - gapY) / 2;
-      const cellW = innerW / cols;
-      const cellH = halfH / rows;
+    }
 
-      // Ally top 6x3
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          geom.allyGridRects.push({
-            x: innerX + c * cellW,
-            y: innerY + r * cellH,
-            w: cellW,
-            h: cellH,
-            cx: innerX + (c + 0.5) * cellW,
-            cy: innerY + (r + 0.5) * cellH
-          });
-        }
-      }
-      // My bottom 6x3
-      const myStartY = innerY + halfH + gapY;
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          geom.myGridRects.push({
-            x: innerX + c * cellW,
-            y: myStartY + r * cellH,
-            w: cellW,
-            h: cellH,
-            cx: innerX + (c + 0.5) * cellW,
-            cy: myStartY + (r + 0.5) * cellH
-          });
-        }
+    // Bottom Grass Island (My Player Zone): y = 0.555 .. 0.732
+    const botIslandY = h * 0.555;
+    const botIslandH = h * 0.177;
+    const botCellH = botIslandH / rows;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        geom.myGridRects.push({
+          x: islandLeft + c * cellW,
+          y: botIslandY + r * botCellH,
+          w: cellW,
+          h: botCellH,
+          cx: islandLeft + (c + 0.5) * cellW,
+          cy: botIslandY + (r + 0.5) * botCellH
+        });
       }
     }
   }
 
-  // Convert enemy progress (0..4 perimeter loop) to (x,y) on rectangular track
+  // Convert enemy progress (0..8 figure-8 loop) to (x,y) so enemies ALWAYS pass through the shared middle lane!
   function getTrackPoint(progress) {
-    const { x, y, w, h } = geom.trackRect;
-    const p = ((progress % 4) + 4) % 4;
-    if (p < 1) {
-      // Top edge: left -> right
-      return { x: x + w * p, y: y, dir: 1 };
-    } else if (p < 2) {
-      // Right edge: top -> bottom
-      return { x: x + w, y: y + h * (p - 1), dir: 1 };
-    } else if (p < 3) {
-      // Bottom edge: right -> left
-      return { x: x + w * (1 - (p - 2)), y: y + h, dir: -1 };
-    } else {
-      // Left edge: bottom -> top
-      return { x: x, y: y + h * (1 - (p - 3)), dir: -1 };
+    const { leftX, rightX, topY, midY, botY } = geom.trackRect;
+    const p = ((progress % 8) + 8) % 8;
+    const seg = Math.floor(p);
+    const t = p - seg;
+
+    switch (seg) {
+      case 0: // Top road: left -> right
+        return { x: leftX + (rightX - leftX) * t, y: topY, dir: 1 };
+      case 1: // Right upper road: top -> middle
+        return { x: rightX, y: topY + (midY - topY) * t, dir: -1 };
+      case 2: // SHARED MIDDLE LANE: right -> left (Both players attack together!)
+        return { x: rightX - (rightX - leftX) * t, y: midY, dir: -1 };
+      case 3: // Left lower road: middle -> bottom
+        return { x: leftX, y: midY + (botY - midY) * t, dir: 1 };
+      case 4: // Bottom road: left -> right
+        return { x: leftX + (rightX - leftX) * t, y: botY, dir: 1 };
+      case 5: // Right lower road: bottom -> middle
+        return { x: rightX, y: botY - (botY - midY) * t, dir: -1 };
+      case 6: // SHARED MIDDLE LANE: right -> left (Both players attack together!)
+        return { x: rightX - (rightX - leftX) * t, y: midY, dir: -1 };
+      default: // Left upper road: middle -> top
+        return { x: leftX, y: midY - (midY - topY) * t, dir: 1 };
     }
   }
 
@@ -263,10 +264,11 @@
       });
     }
 
+    const stackCount = slotUnit.count || 1;
     return {
-      dmg: Math.round(meta.dmg * dmgMul),
+      dmg: Math.round(meta.dmg * dmgMul * stackCount),
       rate: +(meta.rate * (1 + speedBonus)).toFixed(2),
-      range: meta.range
+      range: meta.range + 22
     };
   }
 
@@ -332,19 +334,31 @@
     return 1;
   }
 
-  // Summon a unit onto Player Board
+  // Summon a unit onto Player Board (with Lucky Defense style 1~3 squad stacking!)
   function summonPokemon() {
     if (!state.running) return;
-    const emptyIndices = [];
-    state.mySlots.forEach((s, idx) => { if (!s) emptyIndices.push(idx); });
-    if (emptyIndices.length === 0) {
-      window.sfx.playFail();
-      addFloatText(geom.w / 2, geom.h / 2, '보드 슬롯이 가득 찼습니다! (3합성 필요)', '#ef4444', 14);
-      return;
-    }
     if (state.gold < state.summonCost) {
       window.sfx.playFail();
       addFloatText(geom.w / 2, geom.h / 2, '골드가 부족합니다!', '#ef4444', 14);
+      return;
+    }
+
+    const stage = rollSummonStage();
+    const pool = window.STAGE_POOLS[stage];
+    const picked = pool[Math.floor(Math.random() * pool.length)];
+
+    // First check if an existing slot already has this exact Pokemon with count < 3 (for stage 1~2)
+    let stackSlot = -1;
+    if (stage < 3) {
+      stackSlot = state.mySlots.findIndex(s => s && s.id === picked.id && (s.count || 1) < 3);
+    }
+
+    const emptyIndices = [];
+    state.mySlots.forEach((s, idx) => { if (!s) emptyIndices.push(idx); });
+
+    if (stackSlot === -1 && emptyIndices.length === 0) {
+      window.sfx.playFail();
+      addFloatText(geom.w / 2, geom.h / 2, '섬에 자리가 가득 찼습니다! (3합성 필요)', '#ef4444', 14);
       return;
     }
 
@@ -352,25 +366,29 @@
     state.summonCount++;
     state.summonCost = 20 + Math.floor(state.summonCount * 2.5);
 
-    const stage = rollSummonStage();
-    const pool = window.STAGE_POOLS[stage];
-    const picked = pool[Math.floor(Math.random() * pool.length)];
-    const targetSlot = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
-
-    state.mySlots[targetSlot] = {
-      id: picked.id,
-      cooldown: 0.1,
-      spawnAnim: 1.0
-    };
+    let targetSlot = stackSlot;
+    if (targetSlot !== -1) {
+      state.mySlots[targetSlot].count = (state.mySlots[targetSlot].count || 1) + 1;
+      state.mySlots[targetSlot].spawnAnim = 1.0;
+    } else {
+      targetSlot = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+      state.mySlots[targetSlot] = {
+        id: picked.id,
+        count: 1,
+        cooldown: 0.1,
+        spawnAnim: 1.0
+      };
+    }
 
     const rect = geom.myGridRects[targetSlot];
     if (rect) {
       spawnEffect('summon', rect.cx, rect.cy, picked.color);
+      const curCount = state.mySlots[targetSlot].count || 1;
       if (stage >= 2) {
         addFloatText(rect.cx, rect.cy - 18, `✨ ${stage}단 대박! ${picked.name}`, '#fde047', 14);
         window.sfx.playEvolve();
       } else {
-        addFloatText(rect.cx, rect.cy - 14, picked.name, '#e2e8f0', 11);
+        addFloatText(rect.cx, rect.cy - 14, curCount > 1 ? `${picked.name} x${curCount}` : picked.name, '#ffffff', 12);
         window.sfx.playSummon();
       }
     }
@@ -380,10 +398,10 @@
     updateHud();
   }
 
-  // Count how many of a given unit ID exist on a board
+  // Count how many of a given unit ID exist on a board (including stacked squad count)
   function countUnitOnBoard(board, unitId) {
     let c = 0;
-    board.forEach(u => { if (u && u.id === unitId) c++; });
+    board.forEach(u => { if (u && u.id === unitId) c += (u.count || 1); });
     return c;
   }
 
@@ -397,29 +415,44 @@
     const meta = window.UNIT_BY_ID[target.id];
     if (!meta || meta.stage >= 3) return false; // Stage 3 combines via Mythic recipes
 
-    // Find all slots with same Pokemon ID
-    const matchingSlots = [];
-    board.forEach((u, idx) => {
-      if (u && u.id === target.id) matchingSlots.push(idx);
-    });
+    const totalCount = countUnitOnBoard(board, target.id);
+    if (totalCount < 3) return false;
 
-    if (matchingSlots.length < 3) return false;
-
-    // Keep slotIndex as destination, remove 2 other matching slots
-    const others = matchingSlots.filter(idx => idx !== slotIndex).slice(0, 2);
-    others.forEach(idx => {
-      const r = rects[idx];
-      if (r) spawnEffect('merge_burst', r.cx, r.cy, meta.color);
-      board[idx] = null;
-    });
+    // Deduct 3 units starting from target slot, then other slots if needed
+    let needed = 3;
+    const targetCount = target.count || 1;
+    if (targetCount >= 3) {
+      needed = 0;
+      board[slotIndex] = null;
+    } else {
+      needed -= targetCount;
+      board[slotIndex] = null;
+      for (let idx = 0; idx < board.length && needed > 0; idx++) {
+        const u = board[idx];
+        if (u && u.id === target.id) {
+          const c = u.count || 1;
+          const r = rects[idx];
+          if (r) spawnEffect('merge_burst', r.cx, r.cy, meta.color);
+          if (c <= needed) {
+            needed -= c;
+            board[idx] = null;
+          } else {
+            u.count = c - needed;
+            needed = 0;
+          }
+        }
+      }
+    }
 
     // Evolve into a random Pokemon of (meta.stage + 1)
     const nextStage = meta.stage + 1;
     const nextPool = window.STAGE_POOLS[nextStage];
     const evolved = nextPool[Math.floor(Math.random() * nextPool.length)];
 
+    // Try stacking if stage 2 already exists with count < 3, otherwise place in slotIndex
     board[slotIndex] = {
       id: evolved.id,
+      count: 1,
       cooldown: 0.1,
       spawnAnim: 1.0
     };
@@ -905,9 +938,9 @@
     en.hitFlash = 0.11;
   }
 
-  // Smart AI Partner Logic for 2-Player Co-op
+  // Smart AI Partner Logic (active in solo & coop_ai so top island always fights alongside you on the shared middle lane!)
   function updateAiPartner(dt) {
-    if (state.mode !== 'coop_ai') return;
+    if (state.mode === 'coop_p2p') return;
     state.aiActionTimer -= dt;
     if (state.aiActionTimer > 0) return;
     state.aiActionTimer = 1.6;
@@ -932,18 +965,29 @@
       }
     }
 
-    // 3. Summon a unit if AI has gold and empty slots
-    const empty = [];
-    state.allySlots.forEach((s, idx) => { if (!s) empty.push(idx); });
-    if (empty.length > 0 && state.allyGold >= 25) {
-      state.allyGold -= 25;
+    // 3. Summon a unit (or stack up to 3) if AI has gold
+    if (state.allyGold >= 25) {
       const stage = Math.random() < 0.14 ? 2 : 1;
       const pool = window.STAGE_POOLS[stage];
       const picked = pool[Math.floor(Math.random() * pool.length)];
-      const slot = empty[Math.floor(Math.random() * empty.length)];
-      state.allySlots[slot] = { id: picked.id, cooldown: 0.1, spawnAnim: 1.0 };
-      const r = geom.allyGridRects[slot];
-      if (r) spawnEffect('summon', r.cx, r.cy, picked.color);
+      let stackSlot = -1;
+      if (stage < 3) {
+        stackSlot = state.allySlots.findIndex(s => s && s.id === picked.id && (s.count || 1) < 3);
+      }
+      const empty = [];
+      state.allySlots.forEach((s, idx) => { if (!s) empty.push(idx); });
+
+      if (stackSlot !== -1) {
+        state.allyGold -= 25;
+        state.allySlots[stackSlot].count = (state.allySlots[stackSlot].count || 1) + 1;
+        state.allySlots[stackSlot].spawnAnim = 1.0;
+      } else if (empty.length > 0) {
+        state.allyGold -= 25;
+        const slot = empty[Math.floor(Math.random() * empty.length)];
+        state.allySlots[slot] = { id: picked.id, count: 1, cooldown: 0.1, spawnAnim: 1.0 };
+        const r = geom.allyGridRects[slot];
+        if (r) spawnEffect('summon', r.cx, r.cy, picked.color);
+      }
     }
   }
 
@@ -961,7 +1005,7 @@
       if (state.spawnCooldown <= 0) {
         spawnWaveEnemy(false);
         state.spawnQueue--;
-        state.spawnCooldown = 0.55;
+        state.spawnCooldown = 0.34;
       }
     }
 
@@ -973,7 +1017,7 @@
       }
       state.wave++;
       state.waveTimer = 22;
-      state.spawnQueue = 18 + Math.min(16, Math.floor(state.wave * 0.4));
+      state.spawnQueue = 24 + Math.min(20, Math.floor(state.wave * 0.5));
       state.gold += 30 + state.wave * 2;
       state.allyGold += 45 + state.wave * 3;
 
@@ -1005,7 +1049,7 @@
       });
     };
     updateBoardUnits(state.mySlots, false);
-    if (state.mode !== 'solo') updateBoardUnits(state.allySlots, true);
+    updateBoardUnits(state.allySlots, true);
 
     // Update Projectiles
     for (let i = state.projectiles.length - 1; i >= 0; i--) {
@@ -1134,77 +1178,22 @@
       ctx.translate(dx, dy);
     }
 
-    // 1. Draw Pixel Background
+    // 1. Draw Vibrant Lucky Defense Forest & Grass Islands Map (No dark overlay or artificial boxes!)
     if (bgImg.complete && bgImg.naturalWidth > 0) {
       ctx.drawImage(bgImg, 0, 0, geom.w, geom.h);
-      ctx.fillStyle = 'rgba(8, 12, 24, 0.45)';
-      ctx.fillRect(0, 0, geom.w, geom.h);
     } else {
-      ctx.fillStyle = '#0b1120';
+      ctx.fillStyle = '#4d7c2b';
       ctx.fillRect(0, 0, geom.w, geom.h);
     }
 
-    // 2. Draw Rectangular Track Path
-    const tr = geom.trackRect;
-    ctx.save();
-    ctx.strokeStyle = '#334155';
-    ctx.lineWidth = 28;
-    ctx.strokeRect(tr.x, tr.y, tr.w, tr.h);
-
-    ctx.strokeStyle = '#1e293b';
-    ctx.lineWidth = 22;
-    ctx.strokeRect(tr.x, tr.y, tr.w, tr.h);
-
-    // Dashed directional track center line
-    ctx.strokeStyle = 'rgba(250, 204, 21, 0.35)';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([8, 8]);
-    ctx.strokeRect(tr.x, tr.y, tr.w, tr.h);
-    ctx.restore();
-
-    // Spawn Portal Indicator at Top-Left corner
-    ctx.save();
-    ctx.fillStyle = '#ef4444';
-    ctx.beginPath();
-    ctx.arc(tr.x, tr.y, 12, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = '#fca5a5';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 9px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('SPAWN', tr.x + 18, tr.y - 14);
-    ctx.restore();
-
-    // 3. Draw Partner Board (if Co-op) & Player Board
-    if (state.mode !== 'solo') {
-      // Label for Partner Zone
-      const firstAlly = geom.allyGridRects[0];
-      if (firstAlly) {
-        ctx.fillStyle = '#c084fc';
-        ctx.font = 'bold 11px sans-serif';
-        ctx.textAlign = 'left';
-        ctx.fillText(`🤝 파트너 진영 (${state.allyName})`, firstAlly.x, firstAlly.y - 5);
-      }
-      drawBoardSlots(geom.allyGridRects, state.allySlots, true);
-
-      // Label for Player Zone
-      const firstMy = geom.myGridRects[0];
-      if (firstMy) {
-        ctx.fillStyle = '#fde047';
-        ctx.font = 'bold 11px sans-serif';
-        ctx.textAlign = 'left';
-        ctx.fillText(`🛡️ 내 진영 (드래그 스왑 / 3마리 합성)`, firstMy.x, firstMy.y - 5);
-      }
-    }
-
+    // 2. Draw Partner Island Units (Top Grass Island) & My Island Units (Bottom Grass Island)
+    drawBoardSlots(geom.allyGridRects, state.allySlots, true);
     drawBoardSlots(geom.myGridRects, state.mySlots, false);
 
     // 4. Draw Enemies along Track
     state.enemies.forEach(en => {
       const pos = getTrackPoint(en.progress);
-      const r = (en.isBoss ? 26 : 17) * (en.scale || 1);
+      const r = (en.isBoss ? 32 : 22) * (en.scale || 1);
 
       // Shadow
       ctx.fillStyle = 'rgba(0,0,0,0.45)';
@@ -1377,11 +1366,17 @@
   }
 
   function drawBoardSlots(rects, board, isAlly) {
-    const stageColors = {
-      1: '#64748b',
-      2: '#3b82f6',
-      3: '#a855f7',
-      4: '#facc15'
+    const auraColors = {
+      1: 'rgba(255, 255, 255, 0.75)',
+      2: 'rgba(192, 132, 252, 0.85)',
+      3: 'rgba(239, 68, 68, 0.88)',
+      4: 'rgba(250, 204, 21, 0.95)'
+    };
+    const auraFill = {
+      1: 'rgba(255, 255, 255, 0.22)',
+      2: 'rgba(168, 85, 247, 0.32)',
+      3: 'rgba(239, 68, 68, 0.35)',
+      4: 'rgba(250, 204, 21, 0.42)'
     };
 
     // Draw range circle for selected player unit
@@ -1390,9 +1385,10 @@
       const stats = getUnitStats(board[state.selectedSlot], state.selectedSlot, false);
       if (selRect) {
         ctx.save();
-        ctx.fillStyle = 'rgba(59, 130, 246, 0.12)';
-        ctx.strokeStyle = 'rgba(96, 165, 250, 0.65)';
-        ctx.lineWidth = 1.5;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.14)';
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 4]);
         ctx.beginPath();
         ctx.arc(selRect.cx, selRect.cy, stats.range, 0, Math.PI * 2);
         ctx.fill();
@@ -1403,90 +1399,102 @@
 
     rects.forEach((r, idx) => {
       const unit = board[idx];
-      const pad = 2;
-      const sx = r.x + pad;
-      const sy = r.y + pad;
-      const sw = r.w - pad * 2;
-      const sh = r.h - pad * 2;
 
-      // Tile pedestal background
-      if (slotImg.complete && slotImg.naturalWidth > 0) {
-        ctx.drawImage(slotImg, sx, sy, sw, sh);
-      } else {
-        ctx.fillStyle = '#162038';
-        ctx.fillRect(sx, sy, sw, sh);
-      }
-
+      // Only show subtle landing dots while actively dragging a unit
       if (!unit) {
-        ctx.strokeStyle = isAlly ? 'rgba(148,163,184,0.22)' : 'rgba(148,163,184,0.35)';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(sx, sy, sw, sh);
+        if (!isAlly && state.isDragging) {
+          ctx.save();
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+          ctx.beginPath();
+          ctx.ellipse(r.cx, r.cy + 6, r.w * 0.22, r.h * 0.12, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
         return;
       }
 
       const meta = window.UNIT_BY_ID[unit.id];
-      const count = countUnitOnBoard(board, unit.id);
-      const canMerge3 = meta.stage < 3 && count >= 3;
+      const totalCount = countUnitOnBoard(board, unit.id);
+      const canMerge3 = meta.stage < 3 && totalCount >= 3;
+      const stackCount = unit.count || 1;
 
-      // Stage border & 3-of-a-kind merge ready glow
       ctx.save();
-      ctx.strokeStyle = canMerge3 ? '#fde047' : (stageColors[meta.stage] || '#64748b');
-      ctx.lineWidth = canMerge3 || (!isAlly && state.selectedSlot === idx) ? 2.5 : 1.5;
-      ctx.strokeRect(sx, sy, sw, sh);
-
-      if (meta.stage === 4) {
-        ctx.fillStyle = 'rgba(250, 204, 21, 0.18)';
-        ctx.fillRect(sx, sy, sw, sh);
-      } else if (canMerge3 && !isAlly) {
-        ctx.fillStyle = 'rgba(168, 85, 247, 0.22)';
-        ctx.fillRect(sx, sy, sw, sh);
-      }
-
-      // Draw Animated Pokemon Sprite with Idle Breathe & Attack Lunge
-      const scale = 1 + (unit.spawnAnim || 0) * 0.35;
-      const size = Math.min(sw, sh) * 0.88 * scale;
       const atkRatio = Math.sin(((unit.attackAnim || 0) / 0.24) * Math.PI);
       const lx = (unit.lungeX || 0) * atkRatio;
       const ly = (unit.lungeY || 0) * atkRatio;
       const uPhase = unit.animPhase || 0;
-      const idleSquash = Math.sin(uPhase * 0.6) * 0.04 + atkRatio * 0.12;
+      const idleSquash = Math.sin(uPhase * 0.6) * 0.045 + atkRatio * 0.13;
 
-      drawAnimatedSprite(
-        unit.id,
-        r.cx + lx,
-        r.cy - 2 + ly,
-        size,
-        uPhase,
-        !!unit.faceRight,
-        0,
-        idleSquash,
-        false
-      );
-
-      // Stage Stars / Grade Pill
-      ctx.font = 'bold 9px sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillStyle = stageColors[meta.stage] || '#fff';
-      const badgeTxt = meta.stage === 4 ? '★신화' : `${'★'.repeat(meta.stage)}`;
-      ctx.fillText(badgeTxt, sx + 3, sy + 10);
-
-      // 3-Merge Ready Badge ("합성!")
-      if (canMerge3 && !isAlly) {
-        ctx.fillStyle = '#facc15';
-        ctx.fillRect(sx + sw - 26, sy + 2, 24, 11);
-        ctx.fillStyle = '#000';
-        ctx.font = '900 8px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('3합성', sx + sw - 14, sy + 10);
+      // Determine squad sub-positions (1 unit = center, 2 units = pair, 3 units = triangle squad like Lucky Defense!)
+      let offsets = [{ dx: 0, dy: 0 }];
+      if (stackCount === 2) {
+        offsets = [
+          { dx: -r.w * 0.16, dy: -2 },
+          { dx: r.w * 0.16, dy: 3 }
+        ];
+      } else if (stackCount >= 3) {
+        offsets = [
+          { dx: 0, dy: -6 },
+          { dx: -r.w * 0.19, dy: 5 },
+          { dx: r.w * 0.19, dy: 5 }
+        ];
       }
 
-      // Short Pokemon Name at bottom of slot
-      ctx.fillStyle = 'rgba(9, 13, 24, 0.78)';
-      ctx.fillRect(sx + 1, sy + sh - 13, sw - 2, 12);
-      ctx.fillStyle = meta.stage >= 3 ? '#fde047' : '#e2e8f0';
-      ctx.font = 'bold 9px "Noto Sans KR", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(meta.name.slice(0, 5), r.cx, sy + sh - 4);
+      const scale = 1 + (unit.spawnAnim || 0) * 0.35;
+      const unitScale = meta.stage === 4 ? 1.55 : meta.stage === 3 ? 1.32 : stackCount > 1 ? 0.96 : 1.15;
+      const baseSize = Math.max(36, Math.min(r.w * 0.78, r.h * 1.55)) * unitScale * scale;
+
+      // Draw circular/oval ground aura under each member of the squad
+      offsets.forEach((off, mIdx) => {
+        const ux = r.cx + off.dx + lx;
+        const uy = r.cy + off.dy + ly;
+        const auraW = baseSize * 0.36;
+        const auraH = baseSize * 0.16;
+
+        ctx.fillStyle = auraFill[meta.stage] || auraFill[1];
+        ctx.strokeStyle = canMerge3 ? '#fde047' : (auraColors[meta.stage] || auraColors[1]);
+        ctx.lineWidth = canMerge3 || (!isAlly && state.selectedSlot === idx) ? 2.8 : 2.0;
+        ctx.beginPath();
+        ctx.ellipse(ux, uy + baseSize * 0.28, auraW, auraH, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        drawAnimatedSprite(
+          unit.id,
+          ux,
+          uy,
+          baseSize,
+          uPhase + mIdx * 1.3,
+          !!unit.faceRight,
+          0,
+          idleSquash,
+          false
+        );
+      });
+
+      // Small clean cooldown / mana bar under the unit group
+      const barW = 24;
+      const barH = 3.5;
+      ctx.fillStyle = 'rgba(0,0,0,0.65)';
+      ctx.fillRect(r.cx - barW / 2, r.cy + r.h * 0.36, barW, barH);
+      ctx.fillStyle = meta.stage >= 3 ? '#facc15' : '#38bdf8';
+      const cdPct = Math.max(0.15, Math.min(1, 1 - (unit.cooldown || 0)));
+      ctx.fillRect(r.cx - barW / 2, r.cy + r.h * 0.36, barW * cdPct, barH);
+
+      // 3-Merge Ready Floating Pill ("합성⬆")
+      if (canMerge3 && !isAlly) {
+        const py = r.cy - r.h * 0.38 + Math.sin(uPhase * 0.8) * 2;
+        ctx.fillStyle = '#facc15';
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 1.5;
+        ctx.fillRect(r.cx - 17, py - 7, 34, 13);
+        ctx.strokeRect(r.cx - 17, py - 7, 34, 13);
+        ctx.fillStyle = '#000';
+        ctx.font = '900 9px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('합성⬆', r.cx, py + 3);
+      }
+
       ctx.restore();
     });
   }
