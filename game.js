@@ -170,9 +170,9 @@
     const islandW = w * 0.734;
     const cellW = islandW / cols;
 
-    // Top Grass Island full surface: y = 0.230 .. 0.416
-    const topIslandY = h * 0.230;
-    const topIslandH = h * 0.186;
+    // Top Grass Island full surface: y = 0.218 .. 0.394
+    const topIslandY = h * 0.218;
+    const topIslandH = h * 0.176;
     const topCellH = topIslandH / rows;
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
@@ -182,14 +182,14 @@
           w: cellW,
           h: topCellH,
           cx: islandLeft + (c + 0.5) * cellW,
-          cy: topIslandY + (r + 0.56) * topCellH
+          cy: topIslandY + (r + 0.48) * topCellH
         });
       }
     }
 
-    // Bottom Grass Island full surface: y = 0.570 .. 0.756
-    const botIslandY = h * 0.570;
-    const botIslandH = h * 0.186;
+    // Bottom Grass Island full surface (shifted up so top & bottom margins are symmetric!): y = 0.542 .. 0.718
+    const botIslandY = h * 0.542;
+    const botIslandH = h * 0.176;
     const botCellH = botIslandH / rows;
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
@@ -199,7 +199,7 @@
           w: cellW,
           h: botCellH,
           cx: islandLeft + (c + 0.5) * cellW,
-          cy: botIslandY + (r + 0.56) * botCellH
+          cy: botIslandY + (r + 0.48) * botCellH
         });
       }
     }
