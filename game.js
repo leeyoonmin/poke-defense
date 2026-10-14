@@ -694,6 +694,7 @@
 
   // Visual Effects Helper
   function spawnEffect(type, x, y, color = '#fde047', radius = 38, extra = null) {
+    const dur = type === 'mythic_pillar' ? 0.9 : (type === 'thunder_bolt' || type === 'hydro_beam' ? 0.28 : 0.45);
     state.effects.push({
       type,
       x,
@@ -701,9 +702,40 @@
       color,
       radius,
       extra,
-      life: type === 'mythic_pillar' ? 0.9 : 0.45,
-      maxLife: type === 'mythic_pillar' ? 0.9 : 0.45
+      life: dur,
+      maxLife: dur
     });
+  }
+
+  function makeLightningPath(x1, y1, x2, y2, segs = 6) {
+    const pts = [{ x: x1, y: y1 }];
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const len = Math.hypot(dx, dy) || 1;
+    const nx = -dy / len;
+    const ny = dx / len;
+    for (let i = 1; i < segs; i++) {
+      const t = i / segs;
+      const jit = (Math.random() - 0.5) * Math.min(26, len * 0.22);
+      pts.push({ x: x1 + dx * t + nx * jit, y: y1 + dy * t + ny * jit });
+    }
+    pts.push({ x: x2, y: y2 });
+    return pts;
+  }
+
+  function getAttackStyle(meta) {
+    const fam = meta.familyId;
+    if (fam === 'pikachu_line' || fam === 'ampharos_line') return 'electric';
+    if (fam === 'fire_starter' || meta.id === 250) return 'fire';
+    if (fam === 'water_starter' || meta.id === 382) return 'water';
+    if (fam === 'grass_starter') return 'grass';
+    if (fam === 'alakazam_line' || meta.id === 150) return 'psychic';
+    if (fam === 'gengar_line') return 'ghost';
+    if (fam === 'dragonite_line' || fam === 'salamence_line' || meta.id === 384) return 'dragon';
+    if (fam === 'metagross_line') return 'steel';
+    if (fam === 'tyranitar_line' || fam === 'garchomp_line' || meta.id === 383) return 'earth';
+    if (meta.id === 493) return 'judgment';
+    return 'energy';
   }
 
   // Execute Unit Attack & Family/Mythic Signature Skills
@@ -733,27 +765,75 @@
 
     if (!target) return false;
 
-    // Trigger attack lunge & facing on unit
+    // Trigger dynamic attack lunge, jump & facing on unit
     const adx = target.pos.x - rect.cx;
     const ady = target.pos.y - rect.cy;
     const adist = Math.hypot(adx, ady) || 1;
-    slotUnit.attackAnim = 0.24;
-    slotUnit.lungeX = (adx / adist) * 7;
-    slotUnit.lungeY = (ady / adist) * 7;
+    slotUnit.attackAnim = 0.28;
+    slotUnit.lungeX = (adx / adist) * 11;
+    slotUnit.lungeY = (ady / adist) * 11;
     slotUnit.faceRight = adx > 0;
 
-    // Trigger attack projectile
+    const atkStyle = getAttackStyle(meta);
+    const startX = rect.cx + (adx / adist) * 10;
+    const startY = rect.cy - 10 + (ady / adist) * 10;
+
+    // Instant Beam / Strike styles (Electric, Psychic, Judgment, stage 3+ Water Hydro Pump)
+    if (atkStyle === 'electric') {
+      const boltPts = makeLightningPath(startX, startY, target.pos.x, target.pos.y, 6);
+      spawnEffect('thunder_bolt', target.pos.x, target.pos.y, meta.color || '#facc15', meta.stage * 14, {
+        pts: boltPts,
+        stage: meta.stage
+      });
+      applyHit({
+        x: startX, y: startY, tx: target.pos.x, ty: target.pos.y,
+        targetEnemy: target.en, unitId: slotUnit.id, meta, dmg: stats.dmg,
+        color: meta.color || '#facc15', isAlly, atkStyle
+      });
+      return true;
+    }
+
+    if (atkStyle === 'psychic') {
+      spawnEffect('psy_beam', target.pos.x, target.pos.y, meta.color || '#ec4899', 26 + meta.stage * 10, {
+        x1: startX, y1: startY, x2: target.pos.x, y2: target.pos.y, stage: meta.stage
+      });
+      applyHit({
+        x: startX, y: startY, tx: target.pos.x, ty: target.pos.y,
+        targetEnemy: target.en, unitId: slotUnit.id, meta, dmg: stats.dmg,
+        color: meta.color || '#ec4899', isAlly, atkStyle
+      });
+      return true;
+    }
+
+    if (atkStyle === 'water' && meta.stage >= 3) {
+      spawnEffect('hydro_beam', target.pos.x, target.pos.y, '#38bdf8', 32 + meta.stage * 8, {
+        x1: startX, y1: startY, x2: target.pos.x, y2: target.pos.y, stage: meta.stage
+      });
+      applyHit({
+        x: startX, y: startY, tx: target.pos.x, ty: target.pos.y,
+        targetEnemy: target.en, unitId: slotUnit.id, meta, dmg: stats.dmg,
+        color: '#38bdf8', isAlly, atkStyle
+      });
+      return true;
+    }
+
+    // Trigger styled projectile with trail & rotation
     state.projectiles.push({
-      x: rect.cx,
-      y: rect.cy,
+      x: startX,
+      y: startY,
+      startX,
+      startY,
       tx: target.pos.x,
       ty: target.pos.y,
       targetEnemy: target.en,
       unitId: slotUnit.id,
       meta,
+      atkStyle,
       dmg: stats.dmg,
       color: meta.color || '#fde047',
-      speed: 480,
+      speed: atkStyle === 'grass' ? 540 : atkStyle === 'dragon' ? 560 : 490,
+      rot: Math.atan2(ady, adx),
+      trail: [],
       isAlly
     });
 
@@ -1063,11 +1143,23 @@
         p.tx = tpos.x;
         p.ty = tpos.y;
       }
+      if (p.trail) {
+        p.trail.push({ x: p.x, y: p.y });
+        if (p.trail.length > 5) p.trail.shift();
+      }
       const dx = p.tx - p.x;
       const dy = p.ty - p.y;
       const dist = Math.hypot(dx, dy);
+      p.rot = (p.rot || 0) + dt * 15;
       const step = p.speed * dt;
-      if (dist <= step + 6) {
+      if (dist <= step + 8) {
+        // Spawn signature impact effect by attack style
+        if (p.atkStyle === 'fire') spawnEffect('fire_pillar', p.tx, p.ty, '#f97316', 22 + p.meta.stage * 10);
+        else if (p.atkStyle === 'grass') spawnEffect('leaf_burst', p.tx, p.ty, '#4ade80', 20 + p.meta.stage * 8);
+        else if (p.atkStyle === 'ghost') spawnEffect('ghost_claw', p.tx, p.ty, '#c084fc', 24 + p.meta.stage * 8);
+        else if (p.atkStyle === 'dragon') spawnEffect('dragon_slash', p.tx, p.ty, '#38bdf8', 28 + p.meta.stage * 10);
+        else if (p.atkStyle === 'steel' || p.atkStyle === 'earth') spawnEffect('quake_impact', p.tx, p.ty, p.color, 24 + p.meta.stage * 9);
+        else if (p.atkStyle === 'water') spawnEffect('water_splash', p.tx, p.ty, '#38bdf8', 22 + p.meta.stage * 8);
         applyHit(p);
         state.projectiles.splice(i, 1);
       } else {
@@ -1254,25 +1346,236 @@
       }
     });
 
-    // 5. Draw Projectiles
+    // 5. Draw Styled Signature Projectiles (No more plain generic dots!)
     state.projectiles.forEach(p => {
       ctx.save();
-      ctx.fillStyle = p.color;
-      ctx.shadowColor = p.color;
-      ctx.shadowBlur = 8;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.meta.stage >= 3 ? 6 : 4, 0, Math.PI * 2);
-      ctx.fill();
+      const sz = (p.meta.stage >= 3 ? 10 : p.meta.stage === 2 ? 8 : 6.5);
+      const ang = Math.atan2(p.ty - p.y, p.tx - p.x);
+
+      // Motion ribbon trail
+      if (p.trail && p.trail.length > 1) {
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = sz * 0.7;
+        ctx.lineCap = 'round';
+        ctx.globalAlpha = 0.38;
+        ctx.beginPath();
+        p.trail.forEach((pt, idx) => {
+          if (idx === 0) ctx.moveTo(pt.x, pt.y);
+          else ctx.lineTo(pt.x, pt.y);
+        });
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+
+      ctx.translate(p.x, p.y);
+
+      if (p.atkStyle === 'grass') {
+        // Spinning Crescent Razor Leaf Blade
+        ctx.rotate(p.rot * 1.6);
+        ctx.fillStyle = '#4ade80';
+        ctx.strokeStyle = '#14532d';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.moveTo(sz * 1.5, 0);
+        ctx.quadraticCurveTo(0, -sz * 1.1, -sz * 1.4, 0);
+        ctx.quadraticCurveTo(0, sz * 0.45, sz * 1.5, 0);
+        ctx.fill();
+        ctx.stroke();
+      } else if (p.atkStyle === 'fire') {
+        // Blazing Fireball with White-Hot Core & Flame Tail
+        ctx.rotate(ang);
+        const grad = ctx.createRadialGradient(0, 0, 1, 0, 0, sz * 1.6);
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(0.4, '#fde047');
+        grad.addColorStop(0.8, '#ef4444');
+        grad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(sz * 1.3, 0);
+        ctx.quadraticCurveTo(0, -sz * 1.2, -sz * 2.2, 0);
+        ctx.quadraticCurveTo(0, sz * 1.2, sz * 1.3, 0);
+        ctx.fill();
+      } else if (p.atkStyle === 'water') {
+        // High-Pressure Aqua Spear / Bubble Vortex
+        ctx.rotate(ang);
+        ctx.fillStyle = '#e0f2fe';
+        ctx.strokeStyle = '#0284c7';
+        ctx.lineWidth = 2;
+        ctx.shadowColor = '#38bdf8';
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, sz * 1.35, sz * 0.72, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      } else if (p.atkStyle === 'ghost') {
+        // Swirling Dark Shadow Vortex
+        ctx.rotate(p.rot);
+        ctx.fillStyle = '#1e1b4b';
+        ctx.strokeStyle = '#c084fc';
+        ctx.lineWidth = 2.2;
+        ctx.shadowColor = '#a855f7';
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        for (let k = 0; k < 6; k++) {
+          const r = k % 2 === 0 ? sz * 1.35 : sz * 0.65;
+          const a = (k * Math.PI) / 3;
+          if (k === 0) ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+          else ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      } else if (p.atkStyle === 'dragon') {
+        // Crescent Dragon Claw / Air Slash Wave
+        ctx.rotate(ang);
+        ctx.strokeStyle = p.meta.id === 384 ? '#10b981' : '#38bdf8';
+        ctx.fillStyle = '#fef08a';
+        ctx.lineWidth = 3.5;
+        ctx.shadowColor = ctx.strokeStyle;
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.arc(-sz * 0.3, 0, sz * 1.3, -1.1, 1.1);
+        ctx.stroke();
+      } else if (p.atkStyle === 'steel' || p.atkStyle === 'earth') {
+        // Spinning Jagged Boulder / Steel Cross Fist
+        ctx.rotate(p.rot);
+        ctx.fillStyle = p.atkStyle === 'steel' ? '#93c5fd' : '#a8a29e';
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let k = 0; k < 8; k++) {
+          const r = k % 2 === 0 ? sz * 1.3 : sz * 0.75;
+          const a = (k * Math.PI) / 4;
+          if (k === 0) ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+          else ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      } else {
+        // Golden Star / Judgment Orb
+        ctx.rotate(p.rot);
+        ctx.fillStyle = '#fef08a';
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, sz, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
       ctx.restore();
     });
 
-    // 6. Draw Visual Effects
+    // 6. Draw Visual Effects (Lightning Bolts, Hydro Beams, Fire Pillars, Ghost Claws, Dragon Slashes)
     state.effects.forEach(ef => {
       const t = 1 - ef.life / ef.maxLife;
       ctx.save();
       ctx.globalAlpha = Math.max(0, 1 - t);
 
-      if (ef.type === 'explosion' || ef.type === 'evolve_ring' || ef.type === 'psy_ring') {
+      if (ef.type === 'thunder_bolt' && ef.extra && ef.extra.pts) {
+        // Direct Jagged Lightning Bolt + Sky Strike
+        ctx.strokeStyle = '#facc15';
+        ctx.shadowColor = '#facc15';
+        ctx.shadowBlur = 14;
+        ctx.lineWidth = ef.extra.stage >= 3 ? 5 : 3.2;
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ef.extra.pts.forEach((pt, i) => {
+          if (i === 0) ctx.moveTo(pt.x, pt.y);
+          else ctx.lineTo(pt.x, pt.y);
+        });
+        ctx.stroke();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.6;
+        ctx.stroke();
+
+        // Impact electric ring
+        ctx.strokeStyle = '#fef08a';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(ef.x, ef.y, 12 + t * 22, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (ef.type === 'hydro_beam' && ef.extra) {
+        // High-Pressure Hydro Cannon Stream
+        ctx.strokeStyle = '#0284c7';
+        ctx.shadowColor = '#38bdf8';
+        ctx.shadowBlur = 14;
+        ctx.lineWidth = (ef.extra.stage >= 4 ? 18 : 12) * (1 - t * 0.5);
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(ef.extra.x1, ef.extra.y1);
+        ctx.lineTo(ef.extra.x2, ef.extra.y2);
+        ctx.stroke();
+
+        ctx.strokeStyle = '#e0f2fe';
+        ctx.lineWidth = 5 * (1 - t * 0.5);
+        ctx.stroke();
+
+        ctx.strokeStyle = '#7dd3fc';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(ef.x, ef.y, ef.radius * (0.3 + t * 0.7), 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (ef.type === 'psy_beam' && ef.extra) {
+        // Psychic Distortion Ray + Hexagonal Prism Ring
+        ctx.strokeStyle = ef.color;
+        ctx.lineWidth = 4 * (1 - t * 0.5);
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        ctx.moveTo(ef.extra.x1, ef.extra.y1);
+        ctx.lineTo(ef.extra.x2, ef.extra.y2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        for (let k = 0; k < 6; k++) {
+          const a = (k * Math.PI) / 3 + t * 2;
+          const r = ef.radius * (1 - t * 0.35);
+          if (k === 0) ctx.moveTo(ef.x + Math.cos(a) * r, ef.y + Math.sin(a) * r);
+          else ctx.lineTo(ef.x + Math.cos(a) * r, ef.y + Math.sin(a) * r);
+        }
+        ctx.closePath();
+        ctx.stroke();
+      } else if (ef.type === 'fire_pillar') {
+        const grad = ctx.createRadialGradient(ef.x, ef.y, 2, ef.x, ef.y, ef.radius * (0.4 + t * 0.6));
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(0.45, '#fde047');
+        grad.addColorStop(0.85, '#ef4444');
+        grad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(ef.x, ef.y - t * 12, ef.radius * (0.4 + t * 0.6), 0, Math.PI * 2);
+        ctx.fill();
+      } else if (ef.type === 'ghost_claw') {
+        // X-Shaped Shadow Claw Slash
+        ctx.strokeStyle = '#c084fc';
+        ctx.shadowColor = '#9333ea';
+        ctx.shadowBlur = 10;
+        ctx.lineWidth = 3.5;
+        const r = ef.radius * 0.75;
+        ctx.beginPath();
+        ctx.moveTo(ef.x - r, ef.y - r);
+        ctx.lineTo(ef.x + r, ef.y + r);
+        ctx.moveTo(ef.x + r, ef.y - r);
+        ctx.lineTo(ef.x - r, ef.y + r);
+        ctx.stroke();
+      } else if (ef.type === 'dragon_slash' || ef.type === 'leaf_burst' || ef.type === 'water_splash' || ef.type === 'quake_impact') {
+        ctx.strokeStyle = ef.color;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(ef.x, ef.y, ef.radius * (0.35 + t * 0.65), 0, Math.PI * 2);
+        ctx.stroke();
+        for (let k = 0; k < 5; k++) {
+          const a = (Math.PI * 2 * k) / 5 + t * 3;
+          const d = ef.radius * t * 0.9;
+          ctx.fillStyle = ef.color;
+          ctx.beginPath();
+          ctx.arc(ef.x + Math.cos(a) * d, ef.y + Math.sin(a) * d, 3.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else if (ef.type === 'explosion' || ef.type === 'evolve_ring' || ef.type === 'psy_ring') {
         ctx.strokeStyle = ef.color;
         ctx.lineWidth = ef.type === 'evolve_ring' ? 4 : 2.5;
         ctx.beginPath();
@@ -1423,11 +1726,12 @@
       const stackCount = unit.count || 1;
 
       ctx.save();
-      const atkRatio = Math.sin(((unit.attackAnim || 0) / 0.24) * Math.PI);
+      const atkRatio = Math.sin(((unit.attackAnim || 0) / 0.28) * Math.PI);
       const lx = (unit.lungeX || 0) * atkRatio;
-      const ly = (unit.lungeY || 0) * atkRatio;
+      const ly = (unit.lungeY || 0) * atkRatio - atkRatio * 7; // Dynamic attack hop!
+      const atkTilt = atkRatio * (unit.faceRight ? 0.22 : -0.22);
       const uPhase = unit.animPhase || 0;
-      const idleSquash = Math.sin(uPhase * 0.6) * 0.045 + atkRatio * 0.13;
+      const idleSquash = Math.sin(uPhase * 0.6) * 0.045 + atkRatio * 0.16;
 
       // Determine squad sub-positions anchored strictly inside the slot cell on the grass!
       let offsets = [{ dx: 0, dy: 0 }];
@@ -1471,9 +1775,9 @@
           baseSize,
           uPhase + mIdx * 1.3,
           !!unit.faceRight,
-          0,
+          atkTilt,
           idleSquash,
-          false
+          atkRatio > 0.55
         );
       });
 
