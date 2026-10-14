@@ -49,7 +49,7 @@ window.POKE_DATA = {
       stages: [
         { id: 25, name: '피카츄', stage: 1, dmg: 22, rate: 1.45, range: 130, skillName: '애교 전기자석파', desc: '공격 시 14% 확률로 +5G 획득 (산적 특성)' },
         { id: 26, name: '라이츄', stage: 2, dmg: 70, rate: 1.65, range: 145, skillName: '10만볼트 & 고양이돈받기', desc: '공격 시 20% 확률 +12G, 2% 확률 +1보석 채굴' },
-        { id: 135, name: '쥬피썬더', stage: 3, dmg: 220, rate: 1.9, range: 165, skillName: '썬더볼트 황금광산', desc: '공격 시 28% 확률 +25G, 4% 확률 +1보석 & 감전 연쇄' }
+        { id: 125, name: '에레브', stage: 3, dmg: 220, rate: 1.9, range: 165, skillName: '번개펀치 황금광산', desc: '공격 시 28% 확률 +25G, 4% 확률 +1보석 & 감전 연쇄' }
       ]
     },
     {
@@ -79,13 +79,13 @@ window.POKE_DATA = {
     {
       familyId: 'ampharos_line',
       type: 'electric',
-      typeName: '전기/자력',
+      typeName: '이브이 진화군',
       color: '#facc15',
       role: '연쇄 번개(체인 라이트닝) & 기절 CC기',
       stages: [
-        { id: 81, name: '코일', stage: 1, dmg: 25, rate: 1.15, range: 135, skillName: '전기자석파 쇼크', desc: '3체 연쇄 번개 & 15% 확률 기절' },
-        { id: 82, name: '레어코일', stage: 2, dmg: 80, rate: 1.25, range: 150, skillName: '트라이어택 방전', desc: '4체 연쇄 번개 & 25% 확률 0.8초 기절' },
-        { id: 125, name: '에레브', stage: 3, dmg: 255, rate: 1.4, range: 170, skillName: '번개펀치 대방전', desc: '6체 연쇄 번개 + 38% 확률 1.2초 감전 스턴' }
+        { id: 133, name: '이브이', stage: 1, dmg: 26, rate: 1.22, range: 135, skillName: '스피드스타 연쇄', desc: '3체 연쇄 타격 & 15% 확률 기절' },
+        { id: 136, name: '부스터', stage: 2, dmg: 84, rate: 1.32, range: 150, skillName: '화염자동차 쇼크', desc: '4체 연쇄 스파크 & 25% 확률 0.8초 기절' },
+        { id: 135, name: '쥬피썬더', stage: 3, dmg: 265, rate: 1.55, range: 170, skillName: '10만볼트 뇌신섬광', desc: '6체 연쇄 번개 + 38% 확률 1.2초 감전 스턴' }
       ]
     },
     {
@@ -103,54 +103,54 @@ window.POKE_DATA = {
     {
       familyId: 'tyranitar_line',
       type: 'rock',
-      typeName: '바위/땅',
+      typeName: '인기 요정/헤비',
       color: '#84cc16',
-      role: '스톤샤워 광역 스턴 & 방깎',
+      role: '누르기 광역 스턴 & 방어력 파괴',
       stages: [
-        { id: 74, name: '꼬마돌', stage: 1, dmg: 33, rate: 0.95, range: 125, skillName: '돌떨구기', desc: '바위 강타 및 소폭 방어 감소' },
-        { id: 75, name: '데구리', stage: 2, dmg: 105, rate: 1.05, range: 140, skillName: '스톤샤워', desc: '광역 낙석 피해 + 22% 확률 스턴' },
-        { id: 76, name: '딱구리', stage: 3, dmg: 340, rate: 1.2, range: 160, skillName: '대폭발 암석붕괴', desc: '대규모 암석 붕괴 + 광역 기절 & 방어력 40% 파괴' }
+        { id: 39, name: '푸린', stage: 1, dmg: 30, rate: 1.05, range: 130, skillName: '노래하기 음파', desc: '충격 음파 및 소폭 방어 감소' },
+        { id: 113, name: '럭키', stage: 2, dmg: 102, rate: 1.15, range: 145, skillName: '알폭탄 투척', desc: '광역 폭발 피해 + 22% 확률 스턴' },
+        { id: 143, name: '잠만보', stage: 3, dmg: 350, rate: 1.22, range: 165, skillName: '초헤비급 누르기', desc: '대규모 지진 붕괴 + 광역 기절 & 방어력 40% 파괴' }
       ]
     },
     {
       familyId: 'salamence_line',
-      type: 'dragon',
-      typeName: '비행/질풍',
+      type: 'water',
+      typeName: '물/얼음 올스타',
       color: '#06b6d4',
-      role: '치명타 특화 초고속 폭격',
+      role: '샤미드·라프라스 치명타 빙결 폭격',
       stages: [
-        { id: 16, name: '구구', stage: 1, dmg: 28, rate: 1.35, range: 130, skillName: '전광석화 날개치기', desc: '치명타 확률 25% (2배 피해)' },
-        { id: 17, name: '피죤', stage: 2, dmg: 88, rate: 1.5, range: 145, skillName: '제비반환 급습', desc: '치명타 확률 38% (2.4배 피해)' },
-        { id: 18, name: '피죤투', stage: 3, dmg: 275, rate: 1.85, range: 170, skillName: '마하2 폭풍 공습', desc: '초고속 연사 + 치명타 확률 50% (3배 폭딜)' }
+        { id: 54, name: '고라파덕', stage: 1, dmg: 28, rate: 1.35, range: 130, skillName: '염동력 물대포', desc: '치명타 확률 25% (2배 피해)' },
+        { id: 134, name: '샤미드', stage: 2, dmg: 92, rate: 1.5, range: 150, skillName: '오로라빔 급습', desc: '치명타 확률 38% (2.4배 피해)' },
+        { id: 131, name: '라프라스', stage: 3, dmg: 285, rate: 1.8, range: 175, skillName: '냉동빔 치명타 폭격', desc: '초고속 빙결포 + 치명타 확률 50% (3배 폭딜)' }
       ]
     },
     {
       familyId: 'metagross_line',
       type: 'steel',
-      typeName: '격투/괴력',
+      typeName: '격투/참격 에이스',
       color: '#60a5fa',
-      role: '폭발펀치 보스 추뎀 & 광역 스턴',
+      role: '스라크·괴력몬 보스 추뎀 & 광역 스턴',
       stages: [
-        { id: 66, name: '알통몬', stage: 1, dmg: 31, rate: 1.05, range: 130, skillName: '태권도 당수', desc: '격투 강타 및 기절 확률' },
-        { id: 67, name: '근육몬', stage: 2, dmg: 98, rate: 1.18, range: 145, skillName: '크로스촙', desc: '보스 추뎀 +40% & 격투 충격파' },
-        { id: 68, name: '괴력몬', stage: 3, dmg: 325, rate: 1.35, range: 165, skillName: '폭발펀치 지구던지기', desc: '보스 추뎀 +80% + 광역 진동 스턴 필드' }
+        { id: 106, name: '시라소몬', stage: 1, dmg: 32, rate: 1.1, range: 130, skillName: '무릎차기 강타', desc: '격투 강타 및 기절 확률' },
+        { id: 123, name: '스라크', stage: 2, dmg: 104, rate: 1.28, range: 148, skillName: '고속이동 진공파', desc: '보스 추뎀 +40% & 검기 충격파' },
+        { id: 68, name: '괴력몬', stage: 3, dmg: 335, rate: 1.4, range: 165, skillName: '폭발펀치 지구던지기', desc: '보스 추뎀 +80% + 광역 진동 스턴 필드' }
       ]
     },
     {
       familyId: 'garchomp_line',
       type: 'ground',
-      typeName: '독/땅',
+      typeName: '신수/해룡 에이스',
       color: '#f43f5e',
-      role: '전 트랙 충격파 지진 & 광역 딜',
+      role: '나인테일·윈디·갸라도스 전 트랙 충격파',
       stages: [
-        { id: 32, name: '니드런♂', stage: 1, dmg: 29, rate: 1.15, range: 130, skillName: '두번차기 독침', desc: '지면 충격파 공격' },
-        { id: 33, name: '니드리노', stage: 2, dmg: 94, rate: 1.28, range: 148, skillName: '뿔드릴 강타', desc: '직선 지진파 & 광역 둔화' },
-        { id: 34, name: '니드킹', stage: 3, dmg: 310, rate: 1.48, range: 170, skillName: '대지의힘 대지진', desc: '광범위 지각변동 지진 + 적 전체 충격파' }
+        { id: 37, name: '식스테일', stage: 1, dmg: 29, rate: 1.18, range: 135, skillName: '도깨비불 여우불', desc: '신비의 화염 충격파 공격' },
+        { id: 38, name: '나인테일', stage: 2, dmg: 98, rate: 1.32, range: 150, skillName: '신비의부적 화염폭풍', desc: '직선 열풍파 & 광역 둔화' },
+        { id: 130, name: '갸라도스', stage: 3, dmg: 325, rate: 1.52, range: 175, skillName: '용의분노 대격류', desc: '광범위 해일 충격파 + 적 전체 둔화 폭격' }
       ]
     }
   ],
 
-  // Stage 4 Gen-1 Mythic / Legendary Recipes (100% Kanto 151!)
+  // Stage 4 Gen-1 Mythic / Legendary Recipes (100% Popular Kanto Icons!)
   mythics: [
     {
       id: 146,
@@ -192,8 +192,8 @@ window.POKE_DATA = {
       dmg: 1680,
       rate: 2.4,
       range: 260,
-      recipe: [149, 18, 34], // 망나뇽 + 피죤투 + 니드킹
-      recipeNames: ['망나뇽(3단)', '피죤투(3단)', '니드킹(3단)'],
+      recipe: [149, 131, 130], // 망나뇽 + 라프라스 + 갸라도스
+      recipeNames: ['망나뇽(3단)', '라프라스(3단)', '갸라도스(3단)'],
       skillName: '기원의 슈퍼노바',
       desc: '전 속성 태초의 빛 폭격 + 모든 적 기절/방깎/둔화 동시 부여'
     },
@@ -207,8 +207,8 @@ window.POKE_DATA = {
       dmg: 1180,
       rate: 2.0,
       range: 235,
-      recipe: [76, 68, 125], // 딱구리 + 괴력몬 + 에레브
-      recipeNames: ['딱구리(3단)', '괴력몬(3단)', '에레브(3단)'],
+      recipe: [143, 68, 125], // 잠만보 + 괴력몬 + 에레브
+      recipeNames: ['잠만보(3단)', '괴력몬(3단)', '에레브(3단)'],
       skillName: '천둥번개 신풍',
       desc: '전설의 뇌전 폭풍으로 광역 감전 스턴 & 지속 감전 피해'
     },
@@ -222,8 +222,8 @@ window.POKE_DATA = {
       dmg: 960,
       rate: 1.9,
       range: 230,
-      recipe: [9, 149, 82], // 거북왕(3단) + 망나뇽(3단) + 레어코일(2단)
-      recipeNames: ['거북왕(3단)', '망나뇽(3단)', '레어코일(2단)'],
+      recipe: [131, 134, 136], // 라프라스(3단) + 샤미드(2단) + 부스터(2단)
+      recipeNames: ['라프라스(3단)', '샤미드(2단)', '부스터(2단)'],
       skillName: '절대영도 눈보라',
       desc: '절대영도 눈보라로 광역 적 이동속도 75% 동결 둔화 및 빙결 포격'
     },
@@ -237,8 +237,8 @@ window.POKE_DATA = {
       dmg: 990,
       rate: 1.85,
       range: 225,
-      recipe: [6, 76, 75], // 리자몽(3단) + 딱구리(3단) + 데구리(2단)
-      recipeNames: ['리자몽(3단)', '딱구리(3단)', '데구리(2단)'],
+      recipe: [6, 38, 26], // 리자몽(3단) + 나인테일(2단) + 라이츄(2단)
+      recipeNames: ['리자몽(3단)', '나인테일(2단)', '라이츄(2단)'],
       skillName: '플레어드라이브 신속',
       desc: '대지를 가르는 홍련의 화염으로 광역 방깎 55% 및 보스 중추 타격'
     }
