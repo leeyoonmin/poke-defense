@@ -1,34 +1,73 @@
-// Web Audio API Sound Engine for Poké Lucky Defense
+// Web Audio API Sound Engine for Poké Lucky Defense (with PWA Background Auto-Suspend)
 class DefenseAudio {
   constructor() {
     this.ctx = null;
     this.muted = localStorage.getItem('poke_def_muted') === 'true';
     this.bgmTimer = null;
     this.step = 0;
+    this.bgSuspended = false;
+    this.bindLifecycle();
+  }
+
+  bindLifecycle() {
+    const suspendAudio = () => {
+      this.bgSuspended = true;
+      if (this.ctx && this.ctx.state === 'running') {
+        this.ctx.suspend().catch(() => {});
+      }
+    };
+
+    const resumeAudio = () => {
+      if (document.hidden) return;
+      this.bgSuspended = false;
+      if (!this.muted && this.ctx && this.ctx.state === 'suspended') {
+        this.ctx.resume().catch(() => {});
+      }
+    };
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) suspendAudio();
+      else resumeAudio();
+    });
+    window.addEventListener('pagehide', suspendAudio);
+    window.addEventListener('blur', suspendAudio);
+    window.addEventListener('focus', resumeAudio);
+    window.addEventListener('pageshow', resumeAudio);
+    window.addEventListener('pointerdown', resumeAudio, { passive: true });
   }
 
   init() {
+    if (document.hidden || this.bgSuspended) return;
     if (!this.ctx) {
       const AC = window.AudioContext || window.webkitAudioContext;
       if (AC) this.ctx = new AC();
     }
-    if (this.ctx && this.ctx.state === 'suspended') {
-      this.ctx.resume();
+    if (this.ctx && this.ctx.state === 'suspended' && !this.muted) {
+      this.ctx.resume().catch(() => {});
     }
   }
 
   toggleMute() {
     this.muted = !this.muted;
     localStorage.setItem('poke_def_muted', String(this.muted));
-    if (this.muted) this.stopBGM();
-    else this.startBGM();
+    if (this.muted) {
+      this.stopBGM();
+      if (this.ctx && this.ctx.state === 'running') {
+        this.ctx.suspend().catch(() => {});
+      }
+    } else {
+      if (this.ctx && this.ctx.state === 'suspended' && !document.hidden) {
+        this.ctx.resume().catch(() => {});
+      }
+      this.startBGM();
+    }
     return this.muted;
   }
 
   tone(freq, type, dur, vol = 0.06, slide = null, delay = 0) {
-    if (this.muted) return;
+    if (this.muted || document.hidden || this.bgSuspended) return;
     this.init();
-    if (!this.ctx) return;
+    if (!this.ctx || this.ctx.state !== 'running') return;
 
     const now = this.ctx.currentTime + delay;
     const osc = this.ctx.createOscillator();
@@ -89,7 +128,7 @@ class DefenseAudio {
       349, 440, 523, 494, 440, 392, 440, 494
     ];
     this.bgmTimer = setInterval(() => {
-      if (this.muted) return;
+      if (this.muted || document.hidden || this.bgSuspended) return;
       const f = melody[this.step % melody.length];
       this.tone(f, 'triangle', 0.14, 0.02);
       this.step++;

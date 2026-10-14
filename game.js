@@ -1077,7 +1077,7 @@
 
   // Main Simulation Step
   function updateGame(rawDt) {
-    if (!state.running) return;
+    if (!state.running || document.hidden) return;
     const dt = Math.min(0.1, rawDt) * state.speed;
 
     if (state.shakeTime > 0) state.shakeTime -= rawDt;
