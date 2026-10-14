@@ -47,9 +47,9 @@ window.POKE_DATA = {
       color: '#eab308',
       role: '공격 시 확률적 골드/보석 채굴 & 감전',
       stages: [
-        { id: 172, name: '피츄', stage: 1, dmg: 22, rate: 1.45, range: 130, skillName: '애교 전기자석파', desc: '공격 시 14% 확률로 +5G 획득 (산적 특성)' },
-        { id: 25, name: '피카츄', stage: 2, dmg: 70, rate: 1.65, range: 145, skillName: '10만볼트 & 고양이돈받기', desc: '공격 시 20% 확률 +12G, 2% 확률 +1보석 채굴' },
-        { id: 26, name: '라이츄', stage: 3, dmg: 220, rate: 1.9, range: 165, skillName: '볼트태클 황금광산', desc: '공격 시 28% 확률 +25G, 4% 확률 +1보석 & 감전 연쇄' }
+        { id: 25, name: '피카츄', stage: 1, dmg: 22, rate: 1.45, range: 130, skillName: '애교 전기자석파', desc: '공격 시 14% 확률로 +5G 획득 (산적 특성)' },
+        { id: 26, name: '라이츄', stage: 2, dmg: 70, rate: 1.65, range: 145, skillName: '10만볼트 & 고양이돈받기', desc: '공격 시 20% 확률 +12G, 2% 확률 +1보석 채굴' },
+        { id: 135, name: '쥬피썬더', stage: 3, dmg: 220, rate: 1.9, range: 165, skillName: '썬더볼트 황금광산', desc: '공격 시 28% 확률 +25G, 4% 확률 +1보석 & 감전 연쇄' }
       ]
     },
     {
@@ -79,13 +79,13 @@ window.POKE_DATA = {
     {
       familyId: 'ampharos_line',
       type: 'electric',
-      typeName: '전기',
+      typeName: '전기/자력',
       color: '#facc15',
       role: '연쇄 번개(체인 라이트닝) & 기절 CC기',
       stages: [
-        { id: 179, name: '메리프', stage: 1, dmg: 25, rate: 1.15, range: 135, skillName: '정전기 쇼크', desc: '3체 연쇄 번개 & 15% 확률 기절' },
-        { id: 180, name: '보송송', stage: 2, dmg: 80, rate: 1.25, range: 150, skillName: '일렉트릭 볼', desc: '4체 연쇄 번개 & 25% 확률 0.8초 기절' },
-        { id: 181, name: '전룡', stage: 3, dmg: 255, rate: 1.4, range: 170, skillName: '썬더볼트 등대섬광', desc: '6체 연쇄 번개 + 38% 확률 1.2초 감전 스턴' }
+        { id: 81, name: '코일', stage: 1, dmg: 25, rate: 1.15, range: 135, skillName: '전기자석파 쇼크', desc: '3체 연쇄 번개 & 15% 확률 기절' },
+        { id: 82, name: '레어코일', stage: 2, dmg: 80, rate: 1.25, range: 150, skillName: '트라이어택 방전', desc: '4체 연쇄 번개 & 25% 확률 0.8초 기절' },
+        { id: 125, name: '에레브', stage: 3, dmg: 255, rate: 1.4, range: 170, skillName: '번개펀치 대방전', desc: '6체 연쇄 번개 + 38% 확률 1.2초 감전 스턴' }
       ]
     },
     {
@@ -103,60 +103,60 @@ window.POKE_DATA = {
     {
       familyId: 'tyranitar_line',
       type: 'rock',
-      typeName: '바위/악',
+      typeName: '바위/땅',
       color: '#84cc16',
       role: '스톤샤워 광역 스턴 & 방깎',
       stages: [
-        { id: 246, name: '애버라스', stage: 1, dmg: 33, rate: 0.95, range: 125, skillName: '돌떨구기', desc: '바위 강타 및 소폭 방어 감소' },
-        { id: 247, name: '데기라스', stage: 2, dmg: 105, rate: 1.05, range: 140, skillName: '스톤샤워', desc: '광역 낙석 피해 + 22% 확률 스턴' },
-        { id: 248, name: '마기라스', stage: 3, dmg: 340, rate: 1.2, range: 160, skillName: '스톤에지 모래폭풍', desc: '대규모 암석 붕괴 + 광역 기절 & 방어력 40% 파괴' }
+        { id: 74, name: '꼬마돌', stage: 1, dmg: 33, rate: 0.95, range: 125, skillName: '돌떨구기', desc: '바위 강타 및 소폭 방어 감소' },
+        { id: 75, name: '데구리', stage: 2, dmg: 105, rate: 1.05, range: 140, skillName: '스톤샤워', desc: '광역 낙석 피해 + 22% 확률 스턴' },
+        { id: 76, name: '딱구리', stage: 3, dmg: 340, rate: 1.2, range: 160, skillName: '대폭발 암석붕괴', desc: '대규모 암석 붕괴 + 광역 기절 & 방어력 40% 파괴' }
       ]
     },
     {
       familyId: 'salamence_line',
       type: 'dragon',
-      typeName: '드래곤/비행',
+      typeName: '비행/질풍',
       color: '#06b6d4',
       role: '치명타 특화 초고속 폭격',
       stages: [
-        { id: 371, name: '아공이', stage: 1, dmg: 28, rate: 1.35, range: 130, skillName: '성난앞니', desc: '치명타 확률 25% (2배 피해)' },
-        { id: 372, name: '쉘곤', stage: 2, dmg: 88, rate: 1.5, range: 145, skillName: '드래곤크루', desc: '치명타 확률 38% (2.4배 피해)' },
-        { id: 373, name: '보만다', stage: 3, dmg: 275, rate: 1.85, range: 170, skillName: '폭풍 치명타 공습', desc: '초고속 연사 + 치명타 확률 50% (3배 폭딜)' }
+        { id: 16, name: '구구', stage: 1, dmg: 28, rate: 1.35, range: 130, skillName: '전광석화 날개치기', desc: '치명타 확률 25% (2배 피해)' },
+        { id: 17, name: '피죤', stage: 2, dmg: 88, rate: 1.5, range: 145, skillName: '제비반환 급습', desc: '치명타 확률 38% (2.4배 피해)' },
+        { id: 18, name: '피죤투', stage: 3, dmg: 275, rate: 1.85, range: 170, skillName: '마하2 폭풍 공습', desc: '초고속 연사 + 치명타 확률 50% (3배 폭딜)' }
       ]
     },
     {
       familyId: 'metagross_line',
       type: 'steel',
-      typeName: '강철/에스퍼',
+      typeName: '격투/괴력',
       color: '#60a5fa',
-      role: '코멧펀치 보스 추뎀 & 광역 스턴',
+      role: '폭발펀치 보스 추뎀 & 광역 스턴',
       stages: [
-        { id: 374, name: '메탕', stage: 1, dmg: 31, rate: 1.05, range: 130, skillName: '아이언헤드', desc: '강철 돌진 및 기절 확률' },
-        { id: 375, name: '메탕구', stage: 2, dmg: 98, rate: 1.18, range: 145, skillName: '불릿펀치', desc: '보스 추뎀 +40% & 강철 충격파' },
-        { id: 376, name: '메타그로스', stage: 3, dmg: 325, rate: 1.35, range: 165, skillName: '코멧펀치 자기장폭발', desc: '보스 추뎀 +80% + 광역 전자기 스턴 필드' }
+        { id: 66, name: '알통몬', stage: 1, dmg: 31, rate: 1.05, range: 130, skillName: '태권도 당수', desc: '격투 강타 및 기절 확률' },
+        { id: 67, name: '근육몬', stage: 2, dmg: 98, rate: 1.18, range: 145, skillName: '크로스촙', desc: '보스 추뎀 +40% & 격투 충격파' },
+        { id: 68, name: '괴력몬', stage: 3, dmg: 325, rate: 1.35, range: 165, skillName: '폭발펀치 지구던지기', desc: '보스 추뎀 +80% + 광역 진동 스턴 필드' }
       ]
     },
     {
       familyId: 'garchomp_line',
       type: 'ground',
-      typeName: '드래곤/땅',
+      typeName: '독/땅',
       color: '#f43f5e',
       role: '전 트랙 충격파 지진 & 광역 딜',
       stages: [
-        { id: 443, name: '딥상어동', stage: 1, dmg: 29, rate: 1.15, range: 130, skillName: '모래지옥', desc: '지면 충격파 공격' },
-        { id: 444, name: '한바이트', stage: 2, dmg: 94, rate: 1.28, range: 148, skillName: '대지의힘', desc: '직선 지진파 & 광역 둔화' },
-        { id: 445, name: '한카리아스', stage: 3, dmg: 310, rate: 1.48, range: 170, skillName: '역린 대지진', desc: '광범위 지각변동 지진 + 적 전체 충격파' }
+        { id: 32, name: '니드런♂', stage: 1, dmg: 29, rate: 1.15, range: 130, skillName: '두번차기 독침', desc: '지면 충격파 공격' },
+        { id: 33, name: '니드리노', stage: 2, dmg: 94, rate: 1.28, range: 148, skillName: '뿔드릴 강타', desc: '직선 지진파 & 광역 둔화' },
+        { id: 34, name: '니드킹', stage: 3, dmg: 310, rate: 1.48, range: 170, skillName: '대지의힘 대지진', desc: '광범위 지각변동 지진 + 적 전체 충격파' }
       ]
     }
   ],
 
-  // Stage 4 Mythic / Legendary Recipes (ORD Style One-Tap Summon when materials are on board)
+  // Stage 4 Gen-1 Mythic / Legendary Recipes (100% Kanto 151!)
   mythics: [
     {
-      id: 384,
-      name: '레쿠쟈',
+      id: 146,
+      name: '전설의 파이어',
       grade: '신화',
-      title: '천공의 지배자',
+      title: '화염의 전설조',
       color: '#10b981',
       accent: '#fde047',
       dmg: 1250,
@@ -164,8 +164,8 @@ window.POKE_DATA = {
       range: 240,
       recipe: [6, 9, 3], // 리자몽 + 거북왕 + 이상해꽃
       recipeNames: ['리자몽(3단)', '거북왕(3단)', '이상해꽃(3단)'],
-      skillName: '화룡점정 & 델타스트림',
-      desc: '초거대 에메랄드 용성군으로 트랙 전체 광역 초토화 + 방어력 60% 무시'
+      skillName: '불새 & 태양의 심판',
+      desc: '초거대 태양 화염폭풍으로 트랙 전체 광역 초토화 + 방어력 60% 무시'
     },
     {
       id: 150,
@@ -177,96 +177,96 @@ window.POKE_DATA = {
       dmg: 1420,
       rate: 2.25,
       range: 250,
-      recipe: [65, 94, 26], // 후딘 + 팬텀 + 라이츄
-      recipeNames: ['후딘(3단)', '팬텀(3단)', '라이츄(3단)'],
+      recipe: [65, 94, 135], // 후딘 + 팬텀 + 쥬피썬더
+      recipeNames: ['후딘(3단)', '팬텀(3단)', '쥬피썬더(3단)'],
       skillName: '사이코브레이크 중력장',
       desc: '보스 최대체력 비례 극딜 + 주변 아군 전체 공속 +50% + 골드 찬스'
     },
     {
-      id: 493,
-      name: '아르세우스',
+      id: 151,
+      name: '환상의 뮤',
       grade: '신화',
-      title: '창조신',
+      title: '모든 포켓몬의 시조',
       color: '#fef08a',
       accent: '#ffffff',
       dmg: 1680,
       rate: 2.4,
       range: 260,
-      recipe: [149, 373, 445], // 망나뇽 + 보만다 + 한카리아스
-      recipeNames: ['망나뇽(3단)', '보만다(3단)', '한카리아스(3단)'],
-      skillName: '심판의뭉치 창조의빛',
-      desc: '전 속성 천벌의 빛 폭격 + 모든 적 기절/방깎/둔화 동시 부여'
+      recipe: [149, 18, 34], // 망나뇽 + 피죤투 + 니드킹
+      recipeNames: ['망나뇽(3단)', '피죤투(3단)', '니드킹(3단)'],
+      skillName: '기원의 슈퍼노바',
+      desc: '전 속성 태초의 빛 폭격 + 모든 적 기절/방깎/둔화 동시 부여'
     },
     {
-      id: 250,
-      name: '칠색조',
+      id: 145,
+      name: '전설의 썬더',
       grade: '전설',
-      title: '무지개빛 불사조',
+      title: '뇌전의 전설조',
       color: '#fb923c',
       accent: '#facc15',
       dmg: 1180,
       rate: 2.0,
       range: 235,
-      recipe: [248, 376, 181], // 마기라스 + 메타그로스 + 전룡
-      recipeNames: ['마기라스(3단)', '메타그로스(3단)', '전룡(3단)'],
-      skillName: '성스러운불꽃 무지개신풍',
-      desc: '성스러운 화염 폭풍으로 광역 스턴 & 화상 + 매 웨이브 보석 축복'
+      recipe: [76, 68, 125], // 딱구리 + 괴력몬 + 에레브
+      recipeNames: ['딱구리(3단)', '괴력몬(3단)', '에레브(3단)'],
+      skillName: '천둥번개 신풍',
+      desc: '전설의 뇌전 폭풍으로 광역 감전 스턴 & 지속 감전 피해'
     },
     {
-      id: 382,
-      name: '가이오가',
+      id: 144,
+      name: '전설의 프리져',
       grade: '전설',
-      title: '대해양의 화신',
+      title: '빙결의 전설조',
       color: '#38bdf8',
       accent: '#818cf8',
       dmg: 960,
       rate: 1.9,
       range: 230,
-      recipe: [9, 149, 180], // 거북왕(3단) + 망나뇽(3단) + 보송송(2단)
-      recipeNames: ['거북왕(3단)', '망나뇽(3단)', '보송송(2단)'],
-      skillName: '근원의파동 해일',
-      desc: '거대 해일로 광역 적 이동속도 75% 동결 둔화 및 다중 수압 포격'
+      recipe: [9, 149, 82], // 거북왕(3단) + 망나뇽(3단) + 레어코일(2단)
+      recipeNames: ['거북왕(3단)', '망나뇽(3단)', '레어코일(2단)'],
+      skillName: '절대영도 눈보라',
+      desc: '절대영도 눈보라로 광역 적 이동속도 75% 동결 둔화 및 빙결 포격'
     },
     {
-      id: 383,
-      name: '그란돈',
+      id: 59,
+      name: '전설의 윈디',
       grade: '전설',
-      title: '대륙의 지배자',
+      title: '관동의 전설 신수',
       color: '#f87171',
       accent: '#fbbf24',
       dmg: 990,
       rate: 1.85,
       range: 225,
-      recipe: [6, 248, 247], // 리자몽(3단) + 마기라스(3단) + 데기라스(2단)
-      recipeNames: ['리자몽(3단)', '마기라스(3단)', '데기라스(2단)'],
-      skillName: '단애의칼 용암분화',
-      desc: '대지를 가르는 마그마 칼날로 광역 방깎 55% 및 보스 중추 타격'
+      recipe: [6, 76, 75], // 리자몽(3단) + 딱구리(3단) + 데구리(2단)
+      recipeNames: ['리자몽(3단)', '딱구리(3단)', '데구리(2단)'],
+      skillName: '플레어드라이브 신속',
+      desc: '대지를 가르는 홍련의 화염으로 광역 방깎 55% 및 보스 중추 타격'
     }
   ],
 
-  // Enemy Waves & Bosses
+  // Gen-1 Enemy Waves & Bosses (100% Kanto 1~151)
   enemyPool: [
     { id: 19, name: '꼬렛', scale: 0.9, spd: 1.15, hpMul: 0.85 },
     { id: 41, name: '주뱃', scale: 0.9, spd: 1.3, hpMul: 0.8 },
+    { id: 13, name: '뿔충이', scale: 0.9, spd: 1.05, hpMul: 0.9 },
     { id: 52, name: '나옹', scale: 0.95, spd: 1.1, hpMul: 0.95 },
-    { id: 66, name: '알통몬', scale: 1.0, spd: 0.95, hpMul: 1.15 },
-    { id: 74, name: '꼬마돌', scale: 1.0, spd: 0.85, hpMul: 1.3 },
+    { id: 43, name: '뚜벅쵸', scale: 0.95, spd: 0.95, hpMul: 1.15 },
+    { id: 27, name: '모래두지', scale: 1.0, spd: 0.85, hpMul: 1.3 },
     { id: 88, name: '질퍽이', scale: 1.05, spd: 0.9, hpMul: 1.25 },
-    { id: 109, name: '또가스', scale: 1.0, spd: 1.0, hpMul: 1.1 },
-    { id: 123, name: '스라크', scale: 1.1, spd: 1.35, hpMul: 1.05 }
+    { id: 109, name: '또가스', scale: 1.0, spd: 1.0, hpMul: 1.1 }
   ],
 
   bossPool: [
-    { id: 95, name: '강철톤 롱스톤', title: '암석 거수 보스', hpMul: 14, spd: 0.68 },
+    { id: 95, name: '롱스톤', title: '암석 거수 보스', hpMul: 14, spd: 0.68 },
     { id: 112, name: '코뿌리', title: '중장갑 돌격 보스', hpMul: 16, spd: 0.72 },
-    { id: 130, name: '갸라도스', title: '폭군 해룡 보스', hpMul: 18, spd: 0.78 },
-    { id: 142, name: '프테라', title: '고대 익룡 보스', hpMul: 17, spd: 0.88 },
-    { id: 143, name: '잠만보', title: '초거대 철벽 보스', hpMul: 24, spd: 0.58 },
-    { id: 212, name: '핫삼', title: '붉은 섬광 보스', hpMul: 20, spd: 0.85 },
-    { id: 229, name: '헬가', title: '지옥불 사냥개 보스', hpMul: 19, spd: 0.82 },
-    { id: 144, name: '프리져', title: '전설의 빙결신 보스', hpMul: 26, spd: 0.75 },
-    { id: 145, name: '썬더', title: '전설의 뇌신 보스', hpMul: 28, spd: 0.82 },
-    { id: 146, name: '파이어', title: '전설의 화신 보스', hpMul: 32, spd: 0.78 }
+    { id: 123, name: '스라크', title: '초고속 참격 보스', hpMul: 17, spd: 0.85 },
+    { id: 127, name: '쁘사이저', title: '괴력 집게 보스', hpMul: 18, spd: 0.78 },
+    { id: 128, name: '켄타로스', title: '성난 폭주 보스', hpMul: 19, spd: 0.84 },
+    { id: 115, name: '캥카', title: '사파리 수호 보스', hpMul: 21, spd: 0.75 },
+    { id: 130, name: '갸라도스', title: '폭군 해룡 보스', hpMul: 22, spd: 0.78 },
+    { id: 131, name: '라프라스', title: '빙해의 수호룡 보스', hpMul: 24, spd: 0.72 },
+    { id: 142, name: '프테라', title: '고대 익룡 보스', hpMul: 26, spd: 0.86 },
+    { id: 143, name: '잠만보', title: '초거대 철벽 보스', hpMul: 30, spd: 0.58 }
   ],
 
   // 1. 5-Stage Progression System with Region Modifiers
@@ -290,7 +290,7 @@ window.POKE_DATA = {
       name: 'STAGE 2. 블루시티 해안',
       sub: '40 WAVE · [기믹] 몬스터 이속 +15%',
       icon: '🌊',
-      bossImg: 144,
+      bossImg: 130,
       maxWaves: 40,
       hpMult: 1.25,
       spdMult: 1.15,
@@ -304,7 +304,7 @@ window.POKE_DATA = {
       name: 'STAGE 3. 보라타운 유령탑',
       sub: '50 WAVE · [기믹] 기본 방어갑옷 25% (방깎 필수!)',
       icon: '👻',
-      bossImg: 145,
+      bossImg: 94,
       maxWaves: 50,
       hpMult: 1.5,
       spdMult: 1.05,
@@ -318,7 +318,7 @@ window.POKE_DATA = {
       name: 'STAGE 4. 홍련섬 화산 지대',
       sub: '60 WAVE · [기믹] 10웨이브마다 더블 보스 출현!',
       icon: '🌋',
-      bossImg: 383,
+      bossImg: 112,
       maxWaves: 60,
       hpMult: 1.85,
       spdMult: 1.08,
@@ -329,10 +329,10 @@ window.POKE_DATA = {
     },
     {
       id: 5,
-      name: 'STAGE 5. 석영고원 신들의 성전',
-      sub: '80 WAVE · [기믹] 한도 75마리 & 더블 초전설 보스!',
+      name: 'STAGE 5. 석영고원 챔피언 리그',
+      sub: '80 WAVE · [기믹] 한도 75마리 & 더블 보스!',
       icon: '🏛️',
-      bossImg: 493,
+      bossImg: 150,
       maxWaves: 80,
       hpMult: 2.3,
       spdMult: 1.12,

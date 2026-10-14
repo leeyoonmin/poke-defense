@@ -819,16 +819,16 @@
 
   function getAttackStyle(meta) {
     const fam = meta.familyId;
-    if (fam === 'pikachu_line' || fam === 'ampharos_line') return 'electric';
-    if (fam === 'fire_starter' || meta.id === 250) return 'fire';
-    if (fam === 'water_starter' || meta.id === 382) return 'water';
+    if (fam === 'pikachu_line' || fam === 'ampharos_line' || meta.id === 145) return 'electric';
+    if (fam === 'fire_starter' || meta.id === 146 || meta.id === 59) return 'fire';
+    if (fam === 'water_starter' || meta.id === 144) return 'water';
     if (fam === 'grass_starter') return 'grass';
     if (fam === 'alakazam_line' || meta.id === 150) return 'psychic';
     if (fam === 'gengar_line') return 'ghost';
-    if (fam === 'dragonite_line' || fam === 'salamence_line' || meta.id === 384) return 'dragon';
+    if (fam === 'dragonite_line' || fam === 'salamence_line') return 'dragon';
     if (fam === 'metagross_line') return 'steel';
-    if (fam === 'tyranitar_line' || fam === 'garchomp_line' || meta.id === 383) return 'earth';
-    if (meta.id === 493) return 'judgment';
+    if (fam === 'tyranitar_line' || fam === 'garchomp_line') return 'earth';
+    if (meta.id === 151) return 'judgment';
     return 'energy';
   }
 
@@ -1052,10 +1052,10 @@
         e.slowFactor = Math.min(e.slowFactor, 0.7);
       });
     }
-    // Stage 4 Mythics / Legendaries
+    // Stage 4 Gen-1 Mythics / Legendaries
     else if (meta.isMythic) {
-      if (meta.id === 384) {
-        // Rayquaza: Emerald Dragon Ascent massive AoE + 60% armor shred
+      if (meta.id === 146) {
+        // Moltres: Solar Firestorm massive AoE + 60% armor shred
         damageArea(proj.tx, proj.ty, 125, dmg * 0.85, '#10b981', e => {
           e.armorBreak = Math.max(e.armorBreak, 0.60);
         });
@@ -1064,29 +1064,29 @@
         if (en.isBoss) dmg += Math.min(4000, en.maxHp * 0.025);
         damageArea(proj.tx, proj.ty, 105, dmg * 0.75, '#c084fc');
         if (!proj.isAlly && Math.random() < 0.22) state.gold += 20;
-      } else if (meta.id === 493) {
-        // Arceus: Judgment omni-debuff
+      } else if (meta.id === 151) {
+        // Mew: Genesis Supernova omni-debuff
         damageArea(proj.tx, proj.ty, 135, dmg * 0.9, '#fef08a', e => {
           e.armorBreak = Math.max(e.armorBreak, 0.65);
           e.slowTimer = 3.0;
           e.slowFactor = 0.45;
           if (Math.random() < 0.35) e.stunTimer = Math.max(e.stunTimer, 0.9);
         });
-      } else if (meta.id === 250) {
-        // Ho-Oh: Sacred Fire stun + burn
+      } else if (meta.id === 145) {
+        // Zapdos: Thunder Storm stun + burn
         damageArea(proj.tx, proj.ty, 115, dmg * 0.8, '#fb923c', e => {
           e.burnTimer = 4.0;
           e.burnDmg = dmg * 0.45;
           if (Math.random() < 0.3) e.stunTimer = Math.max(e.stunTimer, 0.8);
         });
-      } else if (meta.id === 382) {
-        // Kyogre: Origin Pulse mega freeze slow
+      } else if (meta.id === 144) {
+        // Articuno: Sheer Cold mega freeze slow
         damageArea(proj.tx, proj.ty, 120, dmg * 0.8, '#38bdf8', e => {
           e.slowTimer = 3.5;
           e.slowFactor = 0.28;
         });
-      } else if (meta.id === 383) {
-        // Groudon: Precipice Blades magma armor crush
+      } else if (meta.id === 59) {
+        // Arcanine: Flare Blitz armor crush
         damageArea(proj.tx, proj.ty, 120, dmg * 0.85, '#f87171', e => {
           e.armorBreak = Math.max(e.armorBreak, 0.55);
         });
