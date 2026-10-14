@@ -697,7 +697,7 @@
       name: `[현상금] ${bossMeta.name}`,
       hp: baseHp,
       maxHp: baseHp,
-      spd: 0.35 * bossMeta.spd,
+      spd: 0.22 * bossMeta.spd,
       progress: 0,
       isBoss: true,
       isBounty: true,
@@ -735,7 +735,7 @@
           name: `[WAVE ${w} 보스] ${bossMeta.name}`,
           hp,
           maxHp: hp,
-          spd: 0.38 * bossMeta.spd * spdMul,
+          spd: 0.22 * bossMeta.spd * spdMul,
           progress: b === 1 ? 4.0 : 0.0,
           isBoss: true,
           isBounty: false,
@@ -768,7 +768,7 @@
         name: eMeta.name,
         hp,
         maxHp: hp,
-        spd: 0.54 * eMeta.spd * spdMul,
+        spd: 0.31 * eMeta.spd * spdMul,
         progress: startProg,
         isBoss: false,
         isBounty: false,
@@ -1330,7 +1330,7 @@
           en.slowFactor = 1;
         }
         en.progress += en.spd * spdMul * dt;
-        en.walkPhase = (en.walkPhase || 0) + rawDt * 11 * spdMul;
+        en.walkPhase = (en.walkPhase || 0) + rawDt * 7.5 * spdMul;
       }
     }
 
